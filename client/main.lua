@@ -104,16 +104,39 @@ if Config.Hotwire.enabled then
 end
 
 if Config.RequireKeyToStart then
-    CreateThread(function()
-        while true do
-            local ped = PlayerPedId()
-            local vehicle = GetVehiclePedIsIn(ped, false)
-            if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == ped and not hasIgnitionAccess(vehicle) then
-                SetVehicleEngineOn(vehicle, false, true, true)
-                Wait(250)
-            else
-                Wait(750)
+    local ignitionMonitorRunning = false
+
+    local function startIgnitionMonitor()
+        if ignitionMonitorRunning then return end
+        local ped = PlayerPedId()
+        local vehicle = GetVehiclePedIsIn(ped, false)
+        if vehicle == 0 or GetPedInVehicleSeat(vehicle, -1) ~= ped then return end
+
+        ignitionMonitorRunning = true
+        CreateThread(function()
+            while true do
+                ped = PlayerPedId()
+                vehicle = GetVehiclePedIsIn(ped, false)
+                if vehicle == 0 or GetPedInVehicleSeat(vehicle, -1) ~= ped then break end
+                if not hasIgnitionAccess(vehicle) then
+                    SetVehicleEngineOn(vehicle, false, true, true)
+                    Wait(250)
+                else
+                    Wait(750)
+                end
             end
-        end
+            ignitionMonitorRunning = false
+        end)
+    end
+
+    local function watchIgnition()
+        QB.cache.onChange('vehicle', startIgnitionMonitor)
+        QB.cache.onChange('seat', startIgnitionMonitor)
+        startIgnitionMonitor()
+    end
+
+    watchIgnition()
+    AddEventHandler('onClientResourceStart', function(resource)
+        if resource == 'qblib' then watchIgnition() end
     end)
 end
