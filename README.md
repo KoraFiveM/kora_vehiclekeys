@@ -42,3 +42,5 @@ Config.PhysicalKey = {
 For a vehicle plate `QB 123`, its key needs `info = { plate = 'QB 123' }`. Additional static fields are supported, for example `metadata = { plate = '{plate}', keyType = 'standard' }`. A value of `true` is also shorthand for matching the normalised vehicle plate. The server always rechecks the actual inventory item; clients cannot select arbitrary metadata.
 
 Keep `Config.AllowTemporaryKeys = true` if vehicle sources use the exports above. Set it to `false` for an item-only setup. Hotwiring can separately grant an in-memory key through `Config.Hotwire.grantTemporaryKey`.
+
+Legacy `qb-vehiclekeys:HasKeys(source, plate)` on the server reads the existing physical/temporary key policy. The client `HasKeys(plate)` performs a rate-limited, read-only server callback for the requesting player and may yield; a timeout returns false. This alias does not grant keys, bypass metadata validation, or include job-vehicle access that is unrelated to physical keys. Other stock events and synchronously cached key state need separate compatibility validation.

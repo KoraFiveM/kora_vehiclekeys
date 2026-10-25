@@ -76,7 +76,9 @@ _G.Entity = function(entity)
     states[entity] = states[entity] or {}
     return { state = setmetatable(states[entity], { __index = { set = function(self, key, value) self[key] = value end } }) }
 end
-_G.AddEventHandler = function() end
+local legacyEvents = {}
+_G.AddEventHandler = function(name, fn) legacyEvents[name] = fn end
+QB.compat = dofile(resourceDir .. '../qblib/compat/provider.lua')()
 
 dofile(resourceDir .. 'config.lua')
 Config.PhysicalKey.enabled = true
@@ -120,6 +122,17 @@ harness.test('a validated hotwire proof grants ignition access even in item-only
     harness.assertEqual(authorization, 'authorisation')
     events['qbvehiclekeys:server:hotwireFinished'](1, authorization, 'proof')
     harness.assertTrue(callbacks['qbvehiclekeys:server:accessRequested'](1, 7))
+end)
+
+harness.test('legacy HasKeys reads actual server keys and rejects invalid subjects', function()
+    local legacy
+    legacyEvents['__cfx_export_qb-vehiclekeys_HasKeys'](function(fn) legacy = fn end)
+    harness.assertTrue(legacy(1, ' qb  123 '), 'validated hotwire key still applies')
+    harness.assertFalse(legacy(2, 'QB 123'), 'cannot borrow another players temporary key')
+    harness.assertFalse(legacy(nil, 'QB 123'))
+    harness.assertFalse(legacy(1, {}))
+    harness.assertTrue(callbacks['qbvehiclekeys:server:legacyHasKeys'](1, 'QB 123'))
+    harness.assertFalse(callbacks['qbvehiclekeys:server:legacyHasKeys'](2, 'QB 123'))
 end)
 
 harness.report('qbvehiclekeys server')

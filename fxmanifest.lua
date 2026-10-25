@@ -1,5 +1,6 @@
 fx_version 'cerulean'
 game 'gta5'
+provide 'qb-vehiclekeys'
 lua54 'yes'
 
 name 'qbvehiclekeys'
@@ -17,5 +18,5 @@ shared_scripts {
     'config.lua',
 }
 
-client_script 'client/main.lua'
+client_scripts { 'client/main.lua', 'client/compat.lua' }
 server_script 'server/main.lua'

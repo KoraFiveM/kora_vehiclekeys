@@ -153,10 +153,20 @@ end
 
 exports('giveKeys', giveKeys)
 exports('removeKeys', removeKeys)
-exports('hasKeys', function(src, plate)
+local function hasKeys(src, plate)
     plate = normalisePlate(plate)
     return plate ~= nil and hasAccess(src, plate) or false
+end
+exports('hasKeys', hasKeys)
+QB.compat.provideExport('qb-vehiclekeys', 'HasKeys', function(src, plate)
+    if type(src) ~= 'number' or src < 1 or src % 1 ~= 0 then return false end
+    return hasKeys(src, plate)
 end)
+
+-- Read only: clients can query only their own physical/temporary keys.
+QB.callback.register('qbvehiclekeys:server:legacyHasKeys', function(src, plate)
+    return hasKeys(src, plate)
+end, { rateLimit = Config.RateLimits.access })
 
 if Config.PhysicalKey.enabled then
     exports.qbcore:createUseable(Config.PhysicalKey.item, function(src, item)
