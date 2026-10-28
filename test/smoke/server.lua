@@ -53,7 +53,7 @@ _G.QB = {
     },
 }
 _G.exports = setmetatable({
-    qbcore = {
+    kora_core = {
         getItemsByName = function() return inventory end,
         getItemByName = function() return { slot = 8, name = 'lockpick' } end,
         removeItem = function() return true end,
@@ -78,7 +78,7 @@ _G.Entity = function(entity)
 end
 local legacyEvents = {}
 _G.AddEventHandler = function(name, fn) legacyEvents[name] = fn end
-QB.compat = dofile(resourceDir .. '../qblib/compat/provider.lua')()
+QB.compat = dofile(resourceDir .. '../kora_lib/compat/provider.lua')()
 
 dofile(resourceDir .. 'config.lua')
 Config.PhysicalKey.enabled = true

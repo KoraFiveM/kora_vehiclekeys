@@ -77,7 +77,7 @@ end
 ---@return integer|nil slot
 local function hasPhysicalKey(src, plate)
     if not Config.PhysicalKey.enabled then return false end
-    local items = exports.qbcore:getItemsByName(src, Config.PhysicalKey.item)
+    local items = exports.kora_core:getItemsByName(src, Config.PhysicalKey.item)
     for index = 1, #items do
         local item = items[index]
         if metadataMatches(item, plate) then return true, item.slot end
@@ -98,7 +98,7 @@ end
 ---@param vehicle integer
 ---@return boolean hasAccess
 local function hasJobVehicleAccess(src, vehicle)
-    local job = exports.qbcore:getPlayerData(src, { 'job' })
+    local job = exports.kora_core:getPlayerData(src, { 'job' })
     local allowedModels = job and jobVehicleModels[job.name]
     return allowedModels ~= nil and allowedModels[GetEntityModel(vehicle)] == true
 end
@@ -117,7 +117,7 @@ local function setLocked(vehicle, networkId, locked)
 end
 
 local function lockpickItem(src)
-    local item = exports.qbcore:getItemByName(src, Config.Lockpick.item)
+    local item = exports.kora_core:getItemByName(src, Config.Lockpick.item)
     return item and item.slot or nil
 end
 
@@ -125,7 +125,7 @@ local function maybeBreakLockpick(src, slot, successful)
     local chances = Config.Lockpick.breakChance or {}
     local chance = tonumber(successful and chances.success or chances.failure) or 0
     if chance <= 0 or math.random(100) > chance then return end
-    exports.qbcore:removeItem(src, Config.Lockpick.item, 1, slot, 'vehicle-lockpick-broke')
+    exports.kora_core:removeItem(src, Config.Lockpick.item, 1, slot, 'vehicle-lockpick-broke')
     QB.notify.send(src, { title = 'Vehicle keys', message = 'Your lockpick broke.', type = 'error' })
 end
 
@@ -169,7 +169,7 @@ QB.callback.register('qbvehiclekeys:server:legacyHasKeys', function(src, plate)
 end, { rateLimit = Config.RateLimits.access })
 
 if Config.PhysicalKey.enabled then
-    exports.qbcore:createUseable(Config.PhysicalKey.item, function(src, item)
+    exports.kora_core:createUseable(Config.PhysicalKey.item, function(src, item)
         QB.events.push(src, 'qbvehiclekeys:client:physicalKeyUsed', item.info or {})
     end)
 end

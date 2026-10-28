@@ -5,7 +5,7 @@ function AddEventHandler(_, fn) fn(function(value) handler=value end) end
 QB = { callback = {trigger=function(name, plate)
     calls=calls+1; requested={name,plate}; return response
 end} }
-QB.compat = dofile(root .. '../qblib/compat/provider.lua')()
+QB.compat = dofile(root .. '../kora_lib/compat/provider.lua')()
 dofile(root .. 'client/compat.lua')
 response=true; assert(handler('PLATE')==true)
 assert(requested[1]=='qbvehiclekeys:server:legacyHasKeys' and requested[2]=='PLATE')

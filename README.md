@@ -1,15 +1,15 @@
-# qbvehiclekeys
+# kora_vehiclekeys
 
-Server-authoritative vehicle locks, ignition checks, physical vehicle keys, and hotwiring. It uses qblib keybinds, notifications, secure callbacks/events, and the proof-backed qblib lockpick minigame. Item access is checked on the server through qbcore's inventory exports.
+Server-authoritative vehicle locks, ignition checks, physical vehicle keys, and hotwiring. It uses kora_lib keybinds, notifications, secure callbacks/events, and the proof-backed kora_lib lockpick minigame. Item access is checked on the server through kora_core's inventory exports.
 
 ## Setup
 
-Start `qbvehiclekeys` after `qbcore` and `qbinventory`. The included server configuration does this already. In normal mode, the resource keeps granted keys only for a player's current session:
+Start `kora_vehiclekeys` after `kora_core` and `kora_inventory`. The included server configuration does this already. In normal mode, the resource keeps granted keys only for a player's current session:
 
 ```lua
-exports.qbvehiclekeys:giveKeys(source, plate)
-exports.qbvehiclekeys:removeKeys(source, plate)
-local hasKeys = exports.qbvehiclekeys:hasKeys(source, plate)
+exports.kora_vehiclekeys:giveKeys(source, plate)
+exports.kora_vehiclekeys:removeKeys(source, plate)
+local hasKeys = exports.kora_vehiclekeys:hasKeys(source, plate)
 ```
 
 Use `giveKeys` from a garage, dealership, rental, or job vehicle creator after it has handed a vehicle to the player. Plates are trimmed, uppercased, and internal whitespace is collapsed before lookup.
@@ -25,7 +25,7 @@ Config.JobVehicles = {
 }
 ```
 
-The outer keys are qbcore job names and each list contains vehicle spawn names. The server checks the player's current job and the actual networked vehicle model before allowing ignition or lock controls. This access does not make `exports.qbvehiclekeys:hasKeys` return true because that export reports plate-key ownership only.
+The outer keys are kora_core job names and each list contains vehicle spawn names. The server checks the player's current job and the actual networked vehicle model before allowing ignition or lock controls. This access does not make `exports.kora_vehiclekeys:hasKeys` return true because that export reports plate-key ownership only.
 
 ## Physical metadata keys
 

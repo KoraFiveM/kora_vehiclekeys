@@ -3,18 +3,20 @@ game 'gta5'
 provide 'qb-vehiclekeys'
 lua54 'yes'
 
-name 'qbvehiclekeys'
+name 'kora_vehiclekeys'
+-- Keep the legacy resource name resolvable for exports['qbvehiclekeys'] callers.
+provide 'qbvehiclekeys'
 author 'qbcore2'
 version '1.0.0'
 description 'Server-authoritative vehicle keys, locks, and hotwiring for qblib/qbcore'
 
 dependencies {
-    'qblib',
-    'qbcore',
+    'kora_lib',
+    'kora_core',
 }
 
 shared_scripts {
-    '@qblib/init.lua',
+    '@kora_lib/init.lua',
     'config.lua',
 }
 

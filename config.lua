@@ -12,7 +12,7 @@ Config.RequireKeyToStart = true
 Config.AccessCacheMs = 1500
 
 -- Virtual keys are held only for the current server session. Garages,
--- dealerships, and job resources can grant them with exports.qbvehiclekeys:giveKeys.
+-- dealerships, and job resources can grant them with exports.kora_vehiclekeys:giveKeys.
 Config.AllowTemporaryKeys = true
 
 -- Jobs listed here can use the configured vehicle models without holding a

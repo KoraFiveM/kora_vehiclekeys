@@ -137,6 +137,6 @@ if Config.RequireKeyToStart then
 
     watchIgnition()
     AddEventHandler('onClientResourceStart', function(resource)
-        if resource == 'qblib' then watchIgnition() end
+        if resource == 'kora_lib' then watchIgnition() end
     end)
 end
