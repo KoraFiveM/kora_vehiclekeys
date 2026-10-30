@@ -48,3 +48,5 @@ Legacy `qb-vehiclekeys:HasKeys(source, plate)` on the server reads the existing 
 ## Lock feedback
 
 After a successful lock or unlock, `Config.lockFeedback` controls the confirmation: `sound` (key-fob chirp for the player), `soundNearby`/`soundRange` (also audible to others in range), `lights` (indicator and headlight flash everyone nearby sees), `animation` (fob animation on foot), `notify` (top-right notification) and `textUI` (bottom-centre Locked/Unlocked for about 1.5 s). Defaults: sound, lights and notify on; soundNearby and textUI off. Failed attempts (no key, out of range) give no feedback. Values are read on each toggle.
+
+Bikes and bicycles are never given the native locked-door status, because it stops a player lifting a fallen bike. A locked bike stays blocked for players without its key (they see "This bike is locked."); key holders can always pick it up. `Config.allowPickupLockedBikes = true` lets anyone pick up a locked bike. Read live.
