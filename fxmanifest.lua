@@ -8,7 +8,7 @@ name 'kora_vehiclekeys'
 provide 'qbvehiclekeys'
 author 'qbcore2'
 version '1.0.0'
-description 'Server-authoritative vehicle keys, locks, and hotwiring for qblib/qbcore'
+description 'Server-authoritative vehicle keys, locks, and hotwiring for kora_lib/qbcore'
 
 dependencies {
     'kora_lib',
