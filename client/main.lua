@@ -43,7 +43,10 @@ local function toggleNearestVehicle()
     local locked, err = QB.callback.trigger('qbvehiclekeys:server:toggleRequested', networkId)
     if locked == nil then return notify(err or 'Could not change the vehicle lock.', 'error') end
     applyLockState(vehicle, locked)
-    notify(locked and 'Vehicle locked.' or 'Vehicle unlocked.', 'success')
+    LockFeedback.localToggle(vehicle, locked)
+    if (Config.lockFeedback or {}).notify ~= false then
+        notify(locked and 'Vehicle locked.' or 'Vehicle unlocked.', 'success')
+    end
 end
 
 local function hotwireCurrentVehicle()
@@ -72,6 +75,11 @@ end
 QB.events.onPush('qbvehiclekeys:client:lockStateChanged', function(networkId, locked)
     if type(networkId) ~= 'number' or type(locked) ~= 'boolean' then return end
     applyLockState(NetworkGetEntityFromNetworkId(networkId), locked)
+end)
+
+QB.events.onPush('qbvehiclekeys:client:lockFeedback', function(networkId, locked, source)
+    if type(networkId) ~= 'number' or type(locked) ~= 'boolean' then return end
+    LockFeedback.remote(NetworkGetEntityFromNetworkId(networkId), locked, source)
 end)
 
 QB.events.onPush('qbvehiclekeys:client:keysChanged', function()

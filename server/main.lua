@@ -192,6 +192,10 @@ QB.callback.register('qbvehiclekeys:server:toggleRequested', function(src, netwo
     local locked = Entity(vehicle).state['qbvehiclekeys:locked'] == true
     locked = not locked
     setLocked(vehicle, networkId, locked)
+    local feedback = Config.lockFeedback or {}
+    if feedback.lights == true or feedback.soundNearby == true then
+        QB.events.push(-1, 'qbvehiclekeys:client:lockFeedback', networkId, locked, src)
+    end
     return locked
 end, { rateLimit = Config.RateLimits.toggle })
 

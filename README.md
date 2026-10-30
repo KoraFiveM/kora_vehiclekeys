@@ -44,3 +44,7 @@ For a vehicle plate `QB 123`, its key needs `info = { plate = 'QB 123' }`. Addit
 Keep `Config.AllowTemporaryKeys = true` if vehicle sources use the exports above. Set it to `false` for an item-only setup. Hotwiring can separately grant an in-memory key through `Config.Hotwire.grantTemporaryKey`.
 
 Legacy `qb-vehiclekeys:HasKeys(source, plate)` on the server reads the existing physical/temporary key policy. The client `HasKeys(plate)` performs a rate-limited, read-only server callback for the requesting player and may yield; a timeout returns false. This alias does not grant keys, bypass metadata validation, or include job-vehicle access that is unrelated to physical keys. Other stock events and synchronously cached key state need separate compatibility validation.
+
+## Lock feedback
+
+After a successful lock or unlock, `Config.lockFeedback` controls the confirmation: `sound` (key-fob chirp for the player), `soundNearby`/`soundRange` (also audible to others in range), `lights` (indicator and headlight flash everyone nearby sees), `animation` (fob animation on foot), `notify` (top-right notification) and `textUI` (bottom-centre Locked/Unlocked for about 1.5 s). Defaults: sound, lights and notify on; soundNearby and textUI off. Failed attempts (no key, out of range) give no feedback. Values are read on each toggle.

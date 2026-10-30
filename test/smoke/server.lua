@@ -135,4 +135,33 @@ harness.test('legacy HasKeys reads actual server keys and rejects invalid subjec
     harness.assertFalse(callbacks['qbvehiclekeys:server:legacyHasKeys'](2, 'QB 123'))
 end)
 
+harness.test('lock feedback broadcast follows lights/soundNearby and skips failed toggles', function()
+    local function feedbackPushes()
+        local n = 0
+        for _, push in ipairs(pushes) do if push.name == 'qbvehiclekeys:client:lockFeedback' then n = n + 1 end end
+        return n
+    end
+    Config.lockFeedback = { lights = true, soundNearby = false }
+    local before = feedbackPushes()
+    local locked = callbacks['qbvehiclekeys:server:toggleRequested'](1, 7)
+    harness.assertEqual(feedbackPushes(), before + 1)
+    local push = pushes[#pushes]
+    harness.assertEqual(push.values[1], 7)
+    harness.assertEqual(push.values[2], locked)
+    harness.assertEqual(push.values[3], 1)
+
+    Config.lockFeedback = { lights = false, soundNearby = true }
+    callbacks['qbvehiclekeys:server:toggleRequested'](1, 7)
+    harness.assertEqual(feedbackPushes(), before + 2)
+
+    Config.lockFeedback = { lights = false, soundNearby = false }
+    callbacks['qbvehiclekeys:server:toggleRequested'](1, 7)
+    harness.assertEqual(feedbackPushes(), before + 2, 'no broadcast when both disabled')
+
+    Config.lockFeedback = { lights = true, soundNearby = true }
+    local failed = callbacks['qbvehiclekeys:server:toggleRequested'](2, 7)
+    harness.assertEqual(failed, nil)
+    harness.assertEqual(feedbackPushes(), before + 2, 'no broadcast on failed toggle')
+end)
+
 harness.report('qbvehiclekeys server')

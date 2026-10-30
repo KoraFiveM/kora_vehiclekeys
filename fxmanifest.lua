@@ -20,5 +20,5 @@ shared_scripts {
     'config.lua',
 }
 
-client_scripts { 'client/main.lua', 'client/compat.lua' }
+client_scripts { 'client/feedback.lua', 'client/main.lua', 'client/compat.lua' }
 server_script 'server/main.lua'

@@ -61,6 +61,18 @@ Config.Hotwire = {
     grantTemporaryKey = true,
 }
 
+-- Feedback after a successful lock/unlock (failed attempts never give feedback).
+-- Every key is read each time a vehicle is toggled, so changes apply live.
+Config.lockFeedback = {
+    sound = true,        -- key-fob chirp for the player who toggled the lock
+    soundNearby = false, -- also play the chirp for players within soundRange
+    soundRange = 10.0,   -- metres, used by soundNearby
+    lights = true,       -- flash indicators and headlights; everyone nearby sees it
+    animation = true,    -- key-fob animation when on foot (skipped inside the vehicle)
+    notify = true,       -- top-right kora_lib notification
+    textUI = false,      -- short bottom-centre "Locked"/"Unlocked" status
+}
+
 Config.RateLimits = {
     toggle = { max = 10, window = 5000 },
     access = { max = 20, window = 10000 },
