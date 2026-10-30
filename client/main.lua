@@ -13,9 +13,18 @@ local function currentOrClosestVehicle(distance)
     return vehicle ~= 0 and vehicle or nil
 end
 
+local function isBike(vehicle)
+    local model = GetEntityModel(vehicle)
+    return IsThisModelABike(model) or IsThisModelABicycle(model)
+end
+
 local function applyLockState(vehicle, locked)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     if not QB.entities.requestControl(vehicle, 250) then return end
+    -- Bikes have no doors, but a locked door status also cancels the enter task
+    -- that lifts a fallen bike. Their lock is enforced by BikeGuard (below) and
+    -- the ignition check instead, so keep the native status unlocked.
+    if isBike(vehicle) then locked = false end
     SetVehicleDoorsLocked(vehicle, locked and 2 or 1)
 end
 
@@ -35,6 +44,37 @@ local function hasIgnitionAccess(vehicle)
     accessCache[networkId] = { allowed = allowed, expiresAt = GetGameTimer() + Config.AccessCacheMs }
     return allowed
 end
+
+local lastBikeNotice = 0
+
+-- Keeps a locked bike blocked for players without access, with feedback. People
+-- with a key (or an unlocked bike) get the normal enter task, which is how a
+-- fallen or crashed bike is lifted. Config.allowPickupLockedBikes is read here,
+-- every tick, so it applies live.
+BikeGuard = {}
+
+function BikeGuard.check()
+    if Config.allowPickupLockedBikes == true then return end
+    local ped = PlayerPedId()
+    if IsPedInAnyVehicle(ped, false) then return end
+    local vehicle = GetVehiclePedIsTryingToEnter(ped)
+    if not vehicle or vehicle == 0 or not isBike(vehicle) then return end
+    if Entity(vehicle).state['qbvehiclekeys:locked'] ~= true then return end
+    if hasIgnitionAccess(vehicle) then return end
+
+    ClearPedTasks(ped)
+    local now = GetGameTimer()
+    if now - lastBikeNotice >= 2000 then
+        lastBikeNotice = now
+        notify('This bike is locked.', 'error')
+    end
+end
+
+local function bikeGuardTick()
+    BikeGuard.check()
+    SetTimeout(150, bikeGuardTick)
+end
+bikeGuardTick()
 
 local function toggleNearestVehicle()
     local vehicle = currentOrClosestVehicle(Config.RemoteDistance)

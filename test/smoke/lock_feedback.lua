@@ -36,6 +36,12 @@ _G.NetworkGetEntityIsNetworked = function() return true end
 _G.NetworkGetNetworkIdFromEntity = function() return 7 end
 _G.NetworkGetEntityFromNetworkId = function() return vehicle end
 _G.SetVehicleDoorsLocked = function() end
+_G.GetEntityModel = function() return 1 end
+_G.IsThisModelABike = function() return false end
+_G.IsThisModelABicycle = function() return false end
+_G.GetVehiclePedIsTryingToEnter = function() return 0 end
+_G.ClearPedTasks = function() end
+_G.Entity = function() return { state = {} } end
 _G.GetGameTimer = function() return 0 end
 _G.Wait = function() end
 _G.CreateThread = function(fn) fn() end

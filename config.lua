@@ -11,6 +11,13 @@ Config.InteractionDistance = 5.0
 Config.RequireKeyToStart = true
 Config.AccessCacheMs = 1500
 
+-- Bikes and bicycles have no doors, so a locked bike is never given the native
+-- locked-door status (that blocks lifting a fallen bike). Instead a locked bike
+-- stays blocked for players without its key, who get a "This bike is locked."
+-- notice; key holders can always pick it up. Set true to let anyone pick up
+-- (and mount) a locked bike; the ignition still needs a key when RequireKeyToStart is on.
+Config.allowPickupLockedBikes = false
+
 -- Virtual keys are held only for the current server session. Garages,
 -- dealerships, and job resources can grant them with exports.kora_vehiclekeys:giveKeys.
 Config.AllowTemporaryKeys = true
