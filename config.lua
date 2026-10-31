@@ -61,8 +61,15 @@ Config.Hotwire = {
     keybind = {
         name = 'vehiclekeys:hotwire',
         description = 'Hotwire the vehicle you are driving',
-        defaultKey = 'H',
+        -- H is the default headlight key (control 74), so hotwiring defaults to
+        -- U. Players can rebind it under Settings > Key Bindings > FiveM. Saved
+        -- bindings from an older default are kept by the game.
+        defaultKey = 'U',
     },
+    -- When true, pressing the hotwire key outside the driver seat (or in a
+    -- vehicle that cannot be hotwired) shows an error. Off by default so the
+    -- key is silent whenever hotwiring does not apply. Read on every press.
+    notifyUnavailable = false,
     -- A successful hotwire grants an in-memory session key. Set false when a
     -- server wants hotwiring to unlock doors only, without allowing ignition.
     grantTemporaryKey = true,

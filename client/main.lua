@@ -91,16 +91,27 @@ end
 
 local function hotwireCurrentVehicle()
     if busyHotwiring then return end
+    -- The hotwire key can share a physical key with other controls (H is also
+    -- the headlight toggle), so every precondition fails silently unless the
+    -- server opted into Config.Hotwire.notifyUnavailable.
+    local function unavailable(message)
+        if (Config.Hotwire or {}).notifyUnavailable == true then notify(message, 'error') end
+    end
     local ped = PlayerPedId()
     local vehicle = GetVehiclePedIsIn(ped, false)
     if vehicle == 0 or GetPedInVehicleSeat(vehicle, -1) ~= ped then
-        return notify('You must be in the driver seat.', 'error')
+        return unavailable('You must be in the driver seat.')
     end
     local networkId = vehicleNetworkId(vehicle)
-    if not networkId then return notify('This vehicle cannot be hotwired.', 'error') end
+    if not networkId then return unavailable('This vehicle cannot be hotwired.') end
 
     busyHotwiring = true
     CreateThread(function()
+        -- Key holders and running engines never need hotwiring: do nothing.
+        if GetIsVehicleEngineRunning(vehicle) or hasIgnitionAccess(vehicle) then
+            busyHotwiring = false
+            return
+        end
         local authorization, err = QB.callback.trigger('qbvehiclekeys:server:hotwireStarted', networkId)
         if not authorization then
             busyHotwiring = false
