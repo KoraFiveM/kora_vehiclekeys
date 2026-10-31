@@ -1,7 +1,7 @@
 local accessCache, busyHotwiring = {}, false
 
 local function notify(message, notificationType)
-    QB.notify.send({ title = 'Vehicle keys', message = message, type = notificationType or 'info' })
+    Kora.notify.send({ title = 'Vehicle keys', message = message, type = notificationType or 'info' })
 end
 
 local function currentOrClosestVehicle(distance)
@@ -20,7 +20,7 @@ end
 
 local function applyLockState(vehicle, locked)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    if not QB.entities.requestControl(vehicle, 250) then return end
+    if not Kora.entities.requestControl(vehicle, 250) then return end
     -- Bikes have no doors, but a locked door status also cancels the enter task
     -- that lifts a fallen bike. Their lock is enforced by BikeGuard (below) and
     -- the ignition check instead, so keep the native status unlocked.
@@ -40,7 +40,7 @@ local function hasIgnitionAccess(vehicle)
     local cached = accessCache[networkId]
     if cached and cached.expiresAt > GetGameTimer() then return cached.allowed end
 
-    local allowed = QB.callback.trigger('qbvehiclekeys:server:accessRequested', networkId) == true
+    local allowed = Kora.callback.trigger('qbvehiclekeys:server:accessRequested', networkId) == true
     accessCache[networkId] = { allowed = allowed, expiresAt = GetGameTimer() + Config.AccessCacheMs }
     return allowed
 end
@@ -80,7 +80,7 @@ local function toggleNearestVehicle()
     local vehicle = currentOrClosestVehicle(Config.RemoteDistance)
     local networkId = vehicleNetworkId(vehicle)
     if not networkId then return notify('No nearby networked vehicle.', 'error') end
-    local locked, err = QB.callback.trigger('qbvehiclekeys:server:toggleRequested', networkId)
+    local locked, err = Kora.callback.trigger('qbvehiclekeys:server:toggleRequested', networkId)
     if locked == nil then return notify(err or 'Could not change the vehicle lock.', 'error') end
     applyLockState(vehicle, locked)
     LockFeedback.localToggle(vehicle, locked)
@@ -112,41 +112,41 @@ local function hotwireCurrentVehicle()
             busyHotwiring = false
             return
         end
-        local authorization, err = QB.callback.trigger('qbvehiclekeys:server:hotwireStarted', networkId)
+        local authorization, err = Kora.callback.trigger('qbvehiclekeys:server:hotwireStarted', networkId)
         if not authorization then
             busyHotwiring = false
             return notify(err or 'Could not start hotwiring.', 'error')
         end
-        local result = QB.minigames.play('lockpick', nil, authorization)
-        QB.events.trigger('qbvehiclekeys:server:hotwireFinished', authorization, result and result.proof or nil)
+        local result = Kora.minigames.play('lockpick', nil, authorization)
+        Kora.events.trigger('qbvehiclekeys:server:hotwireFinished', authorization, result and result.proof or nil)
         busyHotwiring = false
     end)
 end
 
-QB.events.onPush('qbvehiclekeys:client:lockStateChanged', function(networkId, locked)
+Kora.events.onPush('qbvehiclekeys:client:lockStateChanged', function(networkId, locked)
     if type(networkId) ~= 'number' or type(locked) ~= 'boolean' then return end
     applyLockState(NetworkGetEntityFromNetworkId(networkId), locked)
 end)
 
-QB.events.onPush('qbvehiclekeys:client:lockFeedback', function(networkId, locked, source)
+Kora.events.onPush('qbvehiclekeys:client:lockFeedback', function(networkId, locked, source)
     if type(networkId) ~= 'number' or type(locked) ~= 'boolean' then return end
     LockFeedback.remote(NetworkGetEntityFromNetworkId(networkId), locked, source)
 end)
 
-QB.events.onPush('qbvehiclekeys:client:keysChanged', function()
+Kora.events.onPush('qbvehiclekeys:client:keysChanged', function()
     accessCache = {}
 end)
 
-QB.events.onPush('qbvehiclekeys:client:physicalKeyUsed', function(metadata)
+Kora.events.onPush('qbvehiclekeys:client:physicalKeyUsed', function(metadata)
     if type(metadata) ~= 'table' then return end
     toggleNearestVehicle()
 end)
 
-QB.state.onChange('qbvehiclekeys:locked', nil, function(change)
+Kora.state.onChange('qbvehiclekeys:locked', nil, function(change)
     if change.entity ~= 0 then applyLockState(change.entity, change.value == true) end
 end)
 
-QB.keybind.add({
+Kora.keybind.add({
     name = Config.Keybind.name,
     description = Config.Keybind.description,
     defaultKey = Config.Keybind.defaultKey,
@@ -154,7 +154,7 @@ QB.keybind.add({
 })
 
 if Config.Hotwire.enabled then
-    QB.keybind.add({
+    Kora.keybind.add({
         name = Config.Hotwire.keybind.name,
         description = Config.Hotwire.keybind.description,
         defaultKey = Config.Hotwire.keybind.defaultKey,
@@ -189,8 +189,8 @@ if Config.RequireKeyToStart then
     end
 
     local function watchIgnition()
-        QB.cache.onChange('vehicle', startIgnitionMonitor)
-        QB.cache.onChange('seat', startIgnitionMonitor)
+        Kora.cache.onChange('vehicle', startIgnitionMonitor)
+        Kora.cache.onChange('seat', startIgnitionMonitor)
         startIgnitionMonitor()
     end
 

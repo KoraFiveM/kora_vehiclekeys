@@ -48,14 +48,14 @@ end
 local function showStatus(locked)
     textUiToken = textUiToken + 1
     local token = textUiToken
-    if textUiHandle then QB.textui.hide(textUiHandle) end
-    textUiHandle = QB.textui.show(locked and 'Locked' or 'Unlocked', {
+    if textUiHandle then Kora.textui.hide(textUiHandle) end
+    textUiHandle = Kora.textui.show(locked and 'Locked' or 'Unlocked', {
         position = 'bottom-center',
         icon = locked and 'Lock' or 'LockOpen',
     })
     SetTimeout(1500, function()
         if token == textUiToken and textUiHandle then
-            QB.textui.hide(textUiHandle)
+            Kora.textui.hide(textUiHandle)
             textUiHandle = nil
         end
     end)

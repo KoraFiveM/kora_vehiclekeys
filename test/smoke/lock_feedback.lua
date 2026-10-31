@@ -49,7 +49,7 @@ _G.SetTimeout = function(_, fn) timeouts[#timeouts + 1] = fn end
 _G.AddEventHandler = function() end
 
 local notifications = {}
-_G.QB = {
+_G.Kora = {
     notify = { send = function(o) notifications[#notifications + 1] = o end },
     entities = { requestControl = function() return true end },
     callback = { trigger = function() return toggleResult, toggleErr end },

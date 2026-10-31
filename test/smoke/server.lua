@@ -18,7 +18,7 @@ local vectorMeta = {
 }
 local function vector(x, y, z) return setmetatable({ x = x, y = y, z = z }, vectorMeta) end
 
-_G.QB = {
+_G.Kora = {
     callback = { register = function(name, handler) callbacks[name] = handler end },
     events = {
         register = function(name, handler) events[name] = handler end,
@@ -78,7 +78,7 @@ _G.Entity = function(entity)
 end
 local legacyEvents = {}
 _G.AddEventHandler = function(name, fn) legacyEvents[name] = fn end
-QB.compat = dofile(resourceDir .. '../kora_lib/compat/provider.lua')()
+Kora.compat = dofile(resourceDir .. '../kora_lib/compat/provider.lua')()
 
 dofile(resourceDir .. 'config.lua')
 Config.PhysicalKey.enabled = true

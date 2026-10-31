@@ -93,10 +93,10 @@ Config.RateLimits = {
     hotwire = { max = 4, window = 10000 },
 }
 
-if QB and QB.config and QB.config.adopt then
-    Config.JobVehicles = QB.config.map({}, QB.config.list({}, QB.config.string('', { minLength = 1 })), {
+if Kora and Kora.config and Kora.config.adopt then
+    Config.JobVehicles = Kora.config.map({}, Kora.config.list({}, Kora.config.string('', { minLength = 1 })), {
         label = 'Job vehicles',
         description = 'Defines vehicle model names that each job may operate without possessing a physical key. Use the job name as the outer key and an ordered list of exact vehicle model names as its value.',
     })
-    Config = QB.config.adopt(Config)
+    Config = Kora.config.adopt(Config)
 end

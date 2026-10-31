@@ -22,7 +22,7 @@ for jobName, models in pairs(Config.JobVehicles or {}) do
 end
 
 local function normalisePlate(value)
-    return QB.vehicle.normalizePlate(value, {
+    return Kora.vehicle.normalizePlate(value, {
         maxLength = 32,
         characters = 'any',
     })
@@ -35,7 +35,7 @@ end
 ---@return integer|nil vehicle
 ---@return string|nil errorMessage
 local function validateVehicle(src, networkId, maximumDistance, requireDriver)
-    local vehicle, reason = QB.world.resolveNetworkEntity(src, networkId, {
+    local vehicle, reason = Kora.world.resolveNetworkEntity(src, networkId, {
         entityType = 'vehicle',
         maxDistance = maximumDistance,
         requireDriver = requireDriver,
@@ -113,7 +113,7 @@ end
 
 local function setLocked(vehicle, networkId, locked)
     Entity(vehicle).state:set('qbvehiclekeys:locked', locked == true, true)
-    QB.events.push(-1, 'qbvehiclekeys:client:lockStateChanged', networkId, locked == true)
+    Kora.events.push(-1, 'qbvehiclekeys:client:lockStateChanged', networkId, locked == true)
 end
 
 local function lockpickItem(src)
@@ -126,7 +126,7 @@ local function maybeBreakLockpick(src, slot, successful)
     local chance = tonumber(successful and chances.success or chances.failure) or 0
     if chance <= 0 or math.random(100) > chance then return end
     exports.kora_core:removeItem(src, Config.Lockpick.item, 1, slot, 'vehicle-lockpick-broke')
-    QB.notify.send(src, { title = 'Vehicle keys', message = 'Your lockpick broke.', type = 'error' })
+    Kora.notify.send(src, { title = 'Vehicle keys', message = 'Your lockpick broke.', type = 'error' })
 end
 
 ---@param src integer
@@ -136,7 +136,7 @@ local function giveKeys(src, plate, allowWhenDisabled)
     plate = normalisePlate(plate)
     if not plate or (not Config.AllowTemporaryKeys and not allowWhenDisabled) then return false end
     playerKeys(src)[plate] = allowWhenDisabled and 'hotwired' or true
-    QB.events.push(src, 'qbvehiclekeys:client:keysChanged', plate, true)
+    Kora.events.push(src, 'qbvehiclekeys:client:keysChanged', plate, true)
     return true
 end
 
@@ -147,7 +147,7 @@ local function removeKeys(src, plate)
     plate = normalisePlate(plate)
     if not plate or not temporaryKeys[src] then return false end
     temporaryKeys[src][plate] = nil
-    QB.events.push(src, 'qbvehiclekeys:client:keysChanged', plate, false)
+    Kora.events.push(src, 'qbvehiclekeys:client:keysChanged', plate, false)
     return true
 end
 
@@ -158,30 +158,30 @@ local function hasKeys(src, plate)
     return plate ~= nil and hasAccess(src, plate) or false
 end
 exports('hasKeys', hasKeys)
-QB.compat.provideExport('qb-vehiclekeys', 'HasKeys', function(src, plate)
+Kora.compat.provideExport('qb-vehiclekeys', 'HasKeys', function(src, plate)
     if type(src) ~= 'number' or src < 1 or src % 1 ~= 0 then return false end
     return hasKeys(src, plate)
 end)
 
 -- Read only: clients can query only their own physical/temporary keys.
-QB.callback.register('qbvehiclekeys:server:legacyHasKeys', function(src, plate)
+Kora.callback.register('qbvehiclekeys:server:legacyHasKeys', function(src, plate)
     return hasKeys(src, plate)
 end, { rateLimit = Config.RateLimits.access })
 
 if Config.PhysicalKey.enabled then
     exports.kora_core:createUseable(Config.PhysicalKey.item, function(src, item)
-        QB.events.push(src, 'qbvehiclekeys:client:physicalKeyUsed', item.info or {})
+        Kora.events.push(src, 'qbvehiclekeys:client:physicalKeyUsed', item.info or {})
     end)
 end
 
-QB.callback.register('qbvehiclekeys:server:accessRequested', function(src, networkId)
+Kora.callback.register('qbvehiclekeys:server:accessRequested', function(src, networkId)
     local vehicle = validateVehicle(src, networkId, Config.InteractionDistance, true)
     if not vehicle then return false end
     local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
     return plate ~= nil and hasVehicleAccess(src, vehicle, plate)
 end, { rateLimit = Config.RateLimits.access })
 
-QB.callback.register('qbvehiclekeys:server:toggleRequested', function(src, networkId)
+Kora.callback.register('qbvehiclekeys:server:toggleRequested', function(src, networkId)
     local vehicle, vehicleErr = validateVehicle(src, networkId, Config.RemoteDistance, false)
     if not vehicle then return nil, vehicleErr end
     local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
@@ -194,12 +194,12 @@ QB.callback.register('qbvehiclekeys:server:toggleRequested', function(src, netwo
     setLocked(vehicle, networkId, locked)
     local feedback = Config.lockFeedback or {}
     if feedback.lights == true or feedback.soundNearby == true then
-        QB.events.push(-1, 'qbvehiclekeys:client:lockFeedback', networkId, locked, src)
+        Kora.events.push(-1, 'qbvehiclekeys:client:lockFeedback', networkId, locked, src)
     end
     return locked
 end, { rateLimit = Config.RateLimits.toggle })
 
-QB.callback.register('qbvehiclekeys:server:hotwireStarted', function(src, networkId)
+Kora.callback.register('qbvehiclekeys:server:hotwireStarted', function(src, networkId)
     if not Config.Hotwire.enabled then return nil, 'Hotwiring is disabled.' end
     local vehicle, vehicleErr = validateVehicle(src, networkId, Config.InteractionDistance, true)
     if not vehicle then return nil, vehicleErr end
@@ -209,14 +209,14 @@ QB.callback.register('qbvehiclekeys:server:hotwireStarted', function(src, networ
 
     local slot = lockpickItem(src)
     if not slot then return nil, 'You need a lockpick.' end
-    local authorization = QB.minigames.authorizeProof(src, 'lockpick', Config.Lockpick.difficulty)
+    local authorization = Kora.minigames.authorizeProof(src, 'lockpick', Config.Lockpick.difficulty)
     if not authorization then return nil, 'Could not start the lockpick challenge.' end
 
     hotwireSessions[src] = { authorization = authorization, networkId = networkId, plate = plate, slot = slot }
     return authorization
 end, { rateLimit = Config.RateLimits.hotwire })
 
-QB.events.register('qbvehiclekeys:server:hotwireFinished', function(src, authorization, proof)
+Kora.events.register('qbvehiclekeys:server:hotwireFinished', function(src, authorization, proof)
     local session = hotwireSessions[src]
     hotwireSessions[src] = nil
     if not session or type(authorization) ~= 'string' or session.authorization ~= authorization then return end
@@ -224,15 +224,15 @@ QB.events.register('qbvehiclekeys:server:hotwireFinished', function(src, authori
     local vehicle = validateVehicle(src, session.networkId, Config.InteractionDistance, true)
     if not vehicle or normalisePlate(GetVehicleNumberPlateText(vehicle)) ~= session.plate then return end
     local successful = type(proof) == 'string'
-        and QB.minigames.consumeProof(src, proof, 'lockpick', authorization) == true
+        and Kora.minigames.consumeProof(src, proof, 'lockpick', authorization) == true
     maybeBreakLockpick(src, session.slot, successful)
     if not successful then
-        return QB.notify.send(src, { title = 'Vehicle keys', message = 'The ignition resisted your lockpick.', type = 'error' })
+        return Kora.notify.send(src, { title = 'Vehicle keys', message = 'The ignition resisted your lockpick.', type = 'error' })
     end
 
     if Config.Hotwire.grantTemporaryKey then giveKeys(src, session.plate, true) end
     setLocked(vehicle, session.networkId, false)
-    QB.notify.send(src, { title = 'Vehicle keys', message = 'Vehicle hotwired.', type = 'success' })
+    Kora.notify.send(src, { title = 'Vehicle keys', message = 'Vehicle hotwired.', type = 'success' })
 end, { rateLimit = Config.RateLimits.hotwire })
 
 AddEventHandler('playerDropped', function()
