@@ -264,37 +264,151 @@ Kora.compat.provideExport('qb-vehiclekeys', 'RemoveKeys', function(a, b)
 end)
 
 local legacyLastCall = {}
-local function legacyThrottled(src, name)
+local function legacyThrottled(src, name, minInterval)
     local now = GetGameTimer()
     local bySource = legacyLastCall[src]
     if not bySource then bySource = {}; legacyLastCall[src] = bySource end
-    if bySource[name] and now - bySource[name] < 500 then return true end
+    if bySource[name] and now - bySource[name] < (minInterval or 500) then return true end
     bySource[name] = now
     return false
 end
 
-local function legacyEvent(name, handler)
+local function legacyEvent(name, handler, minInterval)
     RegisterNetEvent(name)
     AddEventHandler(name, function(...)
         local src = source
-        if not isOnline(src) or legacyThrottled(src, name) then return end
+        if not isOnline(src) or legacyThrottled(src, name, minInterval) then return end
         handler(src, ...)
     end)
 end
 
--- Stock: the client claims a plate and the server hands it keys. Honoured only
--- when Config.LegacyClientGrants is on, and then only for the vehicle the
--- player is actually driving, with a matching plate.
-legacyEvent('qb-vehiclekeys:server:AcquireVehicleKeys', function(src, plate)
-    if Config.LegacyClientGrants ~= true then return end
-    plate = type(plate) == 'string' and normalisePlate(plate) or nil
-    if not plate then return end
-    local ped = GetPlayerPed(src)
-    local vehicle = GetVehiclePedIsIn(ped, false)
-    if not vehicle or vehicle == 0 or GetPedInVehicleSeat(vehicle, -1) ~= ped then return end
-    if normalisePlate(GetVehicleNumberPlateText(vehicle)) ~= plate then return end
-    giveKeys(src, plate)
+-- Recently created vehicle entities (entityCreated), used to recognise vehicles
+-- that just spawned for the requester (stock /car, QBCore SpawnVehicle).
+local spawned = {}
+AddEventHandler('entityCreated', function(entity)
+    if type(entity) ~= 'number' or not DoesEntityExist(entity) or GetEntityType(entity) ~= 2 then return end
+    -- Ambient traffic/parked population is owned by a nearby client too; only
+    -- script-created (mission) entities count as spawns.
+    if GetEntityPopulationType(entity) ~= 7 then return end
+    local creator = NetworkGetFirstEntityOwner(entity)
+    spawned[entity] = { at = GetGameTimer(), creator = (creator and creator > 0) and creator or nil }
 end)
+AddEventHandler('entityRemoved', function(entity) spawned[entity] = nil end)
+
+local grantLog = {}
+local function grantAllowed(src)
+    local limit = Config.TrustedSetOwner.rateLimit or {}
+    local now = GetGameTimer()
+    local entry = grantLog[src]
+    if not entry or now - entry.since >= (limit.window or 60000) then
+        entry = { since = now, count = 0 }
+        grantLog[src] = entry
+    end
+    if entry.count >= (limit.max or 5) then return false end
+    entry.count = entry.count + 1
+    return true
+end
+
+local function heldByAnother(src, plate)
+    for other, keys in pairs(temporaryKeys) do
+        if other ~= src and keys[plate] then return true end
+    end
+    return false
+end
+
+local function isOwnedVehicle(vehicle, plate)
+    if Entity(vehicle).state.vehicleid ~= nil then return true end
+    -- Look the plate up as written (trimmed/upper-cased) and normalised, since
+    -- player_vehicles may store either form.
+    local raw = (GetVehicleNumberPlateText(vehicle) or ''):match('^%s*(.-)%s*$'):upper()
+    local forms = { plate }
+    if raw ~= plate then forms[2] = raw end
+    for index = 1, #forms do
+        local ok, row = pcall(function() return exports.kora_core:getByPlate(forms[index]) end)
+        if not ok or row ~= nil then return true end -- fail closed when ownership cannot be checked
+    end
+    return false
+end
+
+-- True when a different live vehicle carries the plate (a duplicate plate must
+-- never inherit a key), or a physical key item for it is held by any online player.
+local function plateContested(vehicle, plate)
+    for _, other in ipairs(GetAllVehicles()) do
+        if other ~= vehicle and normalisePlate(GetVehicleNumberPlateText(other)) == plate then return true end
+    end
+    if Config.PhysicalKey.enabled then
+        for _, player in ipairs(GetPlayers()) do
+            if hasPhysicalKey(tonumber(player), plate) then return true end
+        end
+    end
+    return false
+end
+
+---@param src integer
+---@param vehicle integer
+---@param plate string
+---@return string|nil basis 'spawn' | 'job', nil when untrusted
+local function trustedBasis(src, vehicle, plate)
+    local cfg = Config.TrustedSetOwner
+    if isOwnedVehicle(vehicle, plate) then return nil end
+    if Entity(vehicle).state['qbvehiclekeys:locked'] == true then return nil end
+    if (GetVehicleDoorLockStatus(vehicle) or 0) > 1 then return nil end
+    if heldByAnother(src, plate) or plateContested(vehicle, plate) then return nil end
+
+    local job = exports.kora_core:getPlayerData(src, { 'job' })
+    local models = job and job.onduty == true and jobVehicleModels[job.name]
+    if models and models[GetEntityModel(vehicle)] == true then return 'job' end
+
+    local record = spawned[vehicle]
+    if not record or GetGameTimer() - record.at > (cfg.spawnWindowMs or 15000) then return nil end
+    if record.creator then
+        if record.creator == src then return 'spawn' end
+    elseif GetPedInVehicleSeat(vehicle, -1) == GetPlayerPed(src) then
+        return 'spawn'
+    end
+    return nil
+end
+
+-- Stock sends a vehicle network id; older callers send a plate. A plate is only
+-- resolved against the vehicle the player is currently inside.
+local function resolveAcquireTarget(src, target)
+    local cfg = Config.TrustedSetOwner or {}
+    if type(target) == 'number' then
+        return validateVehicle(src, target, cfg.maxDistance or 7.5, false)
+    end
+    local plate = type(target) == 'string' and normalisePlate(target) or nil
+    if not plate then return nil end
+    local vehicle = GetVehiclePedIsIn(GetPlayerPed(src), false)
+    if vehicle and vehicle ~= 0 and normalisePlate(GetVehicleNumberPlateText(vehicle)) == plate then return vehicle end
+    return nil
+end
+
+-- Stock: the client asks for keys to a vehicle (netId; a plate is tolerated).
+-- With Config.LegacyClientGrants the old rule applies: the driven vehicle only.
+-- Otherwise Config.TrustedSetOwner decides (see config.lua). Either way the
+-- server re-derives everything; the client's claim is never trusted.
+legacyEvent('qb-vehiclekeys:server:AcquireVehicleKeys', function(src, target)
+    if Config.LegacyClientGrants == true then
+        local ped = GetPlayerPed(src)
+        local driven = GetVehiclePedIsIn(ped, false)
+        if not driven or driven == 0 or GetPedInVehicleSeat(driven, -1) ~= ped then return end
+        local vehicle = resolveAcquireTarget(src, target)
+        if vehicle ~= driven then return end
+        return giveKeys(src, GetVehicleNumberPlateText(vehicle))
+    end
+
+    local cfg = Config.TrustedSetOwner
+    if not cfg or cfg.enabled ~= true then return end
+    local vehicle = resolveAcquireTarget(src, target)
+    if not vehicle then return end
+    local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
+    if not plate or hasAccess(src, plate) then return end
+    local basis = trustedBasis(src, vehicle, plate)
+    if not basis or not grantAllowed(src) then return end
+    if giveKeys(src, plate) and cfg.log ~= false then
+        print(('[kora_vehiclekeys] granted keys to player %d for plate %s (%s)'):format(src, plate, basis))
+    end
+end, 300) -- the client retries every 400 ms while the server learns of a fresh entity
 
 -- Stock: set a vehicle's lock state (1 unlocked, 2+ locked). Requires access.
 legacyEvent('qb-vehiclekeys:server:setVehLockState', function(src, networkId, state)
@@ -325,4 +439,5 @@ AddEventHandler('playerDropped', function()
     temporaryKeys[source] = nil
     hotwireSessions[source] = nil
     legacyLastCall[source] = nil
+    grantLog[source] = nil
 end)
