@@ -54,10 +54,24 @@ Legacy `qb-vehiclekeys:HasKeys(source, plate)` on the server reads the existing 
 | server export `GiveKeys(src, plate)` / `RemoveKeys(src, plate)` | Trusted server callers; map to `giveKeys` / `removeKeys` (so `Config.AllowTemporaryKeys` applies). Swapped `(plate, src)` is tolerated. |
 | event `qb-vehiclekeys:server:setVehLockState(netId, state)` | Requires the sender to have access (key/job) to the validated, in-range vehicle; `state >= 2` locks. |
 | event `qb-vehiclekeys:server:GiveVehicleKeys(receiver, plate)` | Sender must hold the key; receiver must be online and within `Config.InteractionDistance`. |
-| event `qb-vehiclekeys:server:AcquireVehicleKeys(plate)` and client events `qb-vehiclekeys:client:AddKeys`, `vehiclekeys:client:SetOwner` | **Ignored by default** (a client naming a plate would be a self-grant). With `Config.LegacyClientGrants = true`, honoured only for the vehicle the player is driving with a matching plate (this lets a driver skip hotwiring). |
+| event `qb-vehiclekeys:server:AcquireVehicleKeys(netId \| plate)` and client events `qb-vehiclekeys:client:AddKeys`, `vehiclekeys:client:SetOwner` | Stock sends a vehicle network id; a plate is also accepted (resolved only against the vehicle the player is inside). The client events look the plate up locally (current vehicle first, then within 15 m) and send the network id. With `Config.LegacyClientGrants = false` (default) the request is decided by `Config.TrustedSetOwner`, below. With `Config.LegacyClientGrants = true` it is honoured only for the vehicle the player is driving (this lets a driver skip hotwiring). |
+| client event `qb-vehiclekeys:client:ToggleEngine` and the engine key (`Config.EngineKeybind`, default `G`) | Driver only; the engine toggles only if the server confirms keys or job access (same check as ignition). |
 | client event `qb-vehiclekeys:client:RemoveKeys(plate)` | Drops the player's own temporary key. |
 
-Not mapped: server-to-client `TriggerClientEvent('qb-vehiclekeys:client:AddKeys', ...)` from other server scripts cannot grant keys (the server cannot intercept it); use `exports['qb-vehiclekeys']:GiveKeys(src, plate)` or `exports.kora_vehiclekeys:giveKeys`. `ToggleEngine`, `breakLockpick` and client-side exports other than `HasKeys` are not provided. Stock events are throttled to one call per 500 ms per player.
+Not mapped: server-to-client `TriggerClientEvent('qb-vehiclekeys:client:AddKeys', ...)` from other server scripts cannot grant keys (the server cannot intercept it); use `exports['qb-vehiclekeys']:GiveKeys(src, plate)` or `exports.kora_vehiclekeys:giveKeys`. `breakLockpick` and client-side exports other than `HasKeys` are not provided. Stock events are throttled to one call per 500 ms per player.
+
+### Trusted SetOwner (stock `/car` and job vehicles)
+
+Stock qb-core `/car` and qb-policejob vehicle spawns call `vehiclekeys:client:SetOwner(plate)`. `Config.TrustedSetOwner` (`enabled`, `spawnWindowMs`, `maxDistance`, `rateLimit`, `log`) lets the server grant a temporary key for such a request, never trusting the client's claim. The vehicle must be a networked vehicle within `maxDistance` (7.5 m) of the player, must not be a `player_vehicles` row (or `vehicleid`-tagged entity; the check fails closed if ownership cannot be read), must not be locked, and no other player may hold a key for the plate. In addition either:
+
+- the entity was created within `spawnWindowMs` by the requester (client spawn such as `/car`), or by the server (QBCore `SpawnVehicle`/`CreateVehicle`) with the requester in the driver seat; or
+- its model is listed in `Config.JobVehicles` for the requester's **on-duty** job (list your police models there).
+
+Only script-created (mission, population type 7) entities count as spawns; ambient traffic never does. A request is also refused when another live vehicle shares the plate, when any online player holds a physical key item for the plate, or when `player_vehicles` has the plate in either its raw (trimmed, upper-case) or normalised form.
+
+The stock client events retry the request about every 400 ms for roughly 3 s (until the server confirms a key), because a fresh entity may not be known to the server on the first try. The server therefore allows this event at one call per 300 ms per player instead of 500 ms.
+
+Grants are limited per player by `rateLimit` and logged to the server console (player id, plate, basis) unless `log = false`. Set `enabled = false` to ignore these requests entirely. `Config.LegacyClientGrants` is unchanged and stays `false` by default.
 
 ## Lock feedback
 

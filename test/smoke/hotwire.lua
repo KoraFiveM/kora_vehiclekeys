@@ -22,6 +22,7 @@ _G.IsPedInAnyVehicle = function() return inVehicle end
 _G.CreateThread = function(fn) fn() end
 _G.SetTimeout = function() end
 _G.AddEventHandler = function() end
+_G.RegisterNetEvent = function() end
 _G.GetVehiclePedIsTryingToEnter = function() return 0 end
 _G.GetEntityModel = function() return 1 end
 _G.IsThisModelABike = function() return false end

@@ -131,8 +131,10 @@ harness.test('GiveKeys rejects offline players, bad plates and disabled temporar
 end)
 
 harness.test('client AcquireVehicleKeys cannot self-grant by default', function()
+    Config.TrustedSetOwner.enabled = false
     fire('qb-vehiclekeys:server:AcquireVehicleKeys', 1, 'QB 123')
     harness.assertFalse(export('HasKeys')(1, 'QB 123'))
+    Config.TrustedSetOwner.enabled = true
 end)
 
 harness.test('AcquireVehicleKeys with opt-in requires driving a vehicle with that plate', function()
@@ -144,6 +146,9 @@ harness.test('AcquireVehicleKeys with opt-in requires driving a vehicle with tha
     fire('qb-vehiclekeys:server:AcquireVehicleKeys', 1, {})
     fire('qb-vehiclekeys:server:AcquireVehicleKeys', 1, 'QB 123')
     harness.assertTrue(export('HasKeys')(1, 'QB 123'))
+    export('RemoveKeys')(1, 'QB 123')
+    fire('qb-vehiclekeys:server:AcquireVehicleKeys', 1, 7)
+    harness.assertTrue(export('HasKeys')(1, 'QB 123'), 'network id accepted')
     export('RemoveKeys')(1, 'QB 123')
     Config.LegacyClientGrants = false
 end)

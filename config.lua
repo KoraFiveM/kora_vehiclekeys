@@ -30,6 +30,25 @@ Config.AllowTemporaryKeys = true
 -- scripts should use exports.kora_vehiclekeys:giveKeys instead.
 Config.LegacyClientGrants = false
 
+-- Safe handling of stock `vehiclekeys:client:SetOwner` / AddKeys /
+-- `qb-vehiclekeys:server:AcquireVehicleKeys` (stock qb-core /car and qb-policejob
+-- job vehicles). Works while LegacyClientGrants is false. A request is granted a
+-- temporary key only when the vehicle is a networked entity within maxDistance of
+-- the player and is NOT a player_vehicles row, NOT locked, and held by nobody
+-- else, and either:
+--   * the entity appeared within spawnWindowMs and was created by the requester
+--     (client spawn, as stock /car does) or by the server with the requester in
+--     the driver seat (QBCore SpawnVehicle with warp), or
+--   * its model is in Config.JobVehicles for the requester's on-duty job.
+Config.TrustedSetOwner = {
+    enabled = true,
+    spawnWindowMs = 15000,
+    maxDistance = 7.5,
+    -- At most `max` grants per player per `window` ms.
+    rateLimit = { max = 5, window = 60000 },
+    log = true,
+}
+
 -- Jobs listed here can use the configured vehicle models without holding a
 -- plate key. Model names are the vehicle spawn names, not display labels.
 --
@@ -62,6 +81,14 @@ Config.Lockpick = {
         speed = 0.85,
         timeLimit = 12000,
     },
+}
+
+-- Stock qb-vehiclekeys engine key (`engine` command, G). Only works for the
+-- driver of a vehicle the server says they hold keys (or job access) for.
+Config.EngineKeybind = {
+    name = 'vehiclekeys:toggle-engine',
+    description = 'Toggle the engine of your vehicle',
+    defaultKey = 'G',
 }
 
 Config.Hotwire = {

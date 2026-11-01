@@ -28,6 +28,7 @@ _G.Wait = function() end
 _G.CreateThread = function() end
 _G.SetTimeout = function(_, fn) timeouts[#timeouts + 1] = fn end
 _G.AddEventHandler = function() end
+_G.RegisterNetEvent = function() end
 
 local push = {}
 _G.Kora = {

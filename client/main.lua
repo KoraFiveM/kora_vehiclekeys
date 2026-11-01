@@ -89,6 +89,21 @@ local function toggleNearestVehicle()
     end
 end
 
+-- Stock engine toggle (qb-vehiclekeys:client:ToggleEngine and the `engine` key).
+-- Driver only, and the server must confirm keys or job access.
+local function toggleEngine()
+    local ped = PlayerPedId()
+    local vehicle = GetVehiclePedIsIn(ped, false)
+    if vehicle == 0 or GetPedInVehicleSeat(vehicle, -1) ~= ped then return end
+    CreateThread(function()
+        if not hasIgnitionAccess(vehicle) then return end
+        SetVehicleEngineOn(vehicle, not GetIsVehicleEngineRunning(vehicle), false, true)
+    end)
+end
+
+RegisterNetEvent('qb-vehiclekeys:client:ToggleEngine')
+AddEventHandler('qb-vehiclekeys:client:ToggleEngine', toggleEngine)
+
 local function hotwireCurrentVehicle()
     if busyHotwiring then return end
     -- The hotwire key can share a physical key with other controls (H is also
@@ -151,6 +166,13 @@ Kora.keybind.add({
     description = Config.Keybind.description,
     defaultKey = Config.Keybind.defaultKey,
     onPressed = toggleNearestVehicle,
+})
+
+Kora.keybind.add({
+    name = Config.EngineKeybind.name,
+    description = Config.EngineKeybind.description,
+    defaultKey = Config.EngineKeybind.defaultKey,
+    onPressed = toggleEngine,
 })
 
 if Config.Hotwire.enabled then
