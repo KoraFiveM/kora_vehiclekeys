@@ -1,7 +1,7 @@
 local accessCache, busyHotwiring = {}, false
 
-local function notify(message, notificationType)
-    Kora.notify.send({ title = 'Vehicle keys', message = message, type = notificationType or 'info' })
+local function notify(message, notificationType, title)
+    Kora.notify.send({ title = title or Config.Text.titleKeys, message = message, type = notificationType or 'info' })
 end
 
 local function currentOrClosestVehicle(distance)
@@ -95,7 +95,7 @@ local function hotwireCurrentVehicle()
     -- the headlight toggle), so every precondition fails silently unless the
     -- server opted into Config.Hotwire.notifyUnavailable.
     local function unavailable(message)
-        if (Config.Hotwire or {}).notifyUnavailable == true then notify(message, 'error') end
+        if (Config.Hotwire or {}).notifyUnavailable == true then notify(message, 'error', Config.Text.titleHotwireFailed) end
     end
     local ped = PlayerPedId()
     local vehicle = GetVehiclePedIsIn(ped, false)
@@ -115,7 +115,7 @@ local function hotwireCurrentVehicle()
         local authorization, err = Kora.callback.trigger('qbvehiclekeys:server:hotwireStarted', networkId)
         if not authorization then
             busyHotwiring = false
-            return notify(err or 'Could not start hotwiring.', 'error')
+            return notify(err or Config.Text.hotwireNoResponse, 'error', Config.Text.titleHotwireFailed)
         end
         local result = Kora.minigames.play('lockpick', nil, authorization)
         Kora.events.trigger('qbvehiclekeys:server:hotwireFinished', authorization, result and result.proof or nil)

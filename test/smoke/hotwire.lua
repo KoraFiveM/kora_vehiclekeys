@@ -91,6 +91,7 @@ harness.test('notifyUnavailable restores the error messages', function()
     Config.Hotwire.notifyUnavailable = true
     reset(); isDriver = false; press()
     harness.assertEqual(#notifications, 1); harness.assertEqual(notifications[1].message, 'You must be in the driver seat.')
+    harness.assertEqual(notifications[1].title, Config.Text.titleHotwireFailed)
     Config.Hotwire.notifyUnavailable = false
 end)
 
