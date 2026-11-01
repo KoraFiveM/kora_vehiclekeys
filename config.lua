@@ -73,6 +73,13 @@ Config.PhysicalKey = {
 
 Config.Lockpick = {
     item = 'lockpick',
+    -- Items that start the lockpick flow when used from the inventory (and that
+    -- the server accepts as the pick for it). Falls back to { item } when empty.
+    items = { 'lockpick', 'advancedlockpick' },
+    -- Register the items above as usable (via kora_core, so kora_inventory and
+    -- other inventory providers route "Use" to the lockpick flow). Set false if
+    -- another resource already registers them.
+    registerUsable = true,
     breakChance = { success = 5, failure = 25 },
     difficulty = {
         attempts = 2,
@@ -119,6 +126,9 @@ Config.Text = {
     titleHotwireFailed = 'Hotwire Failed',
     -- Shown when the server gives no reason at all (callback rate limit,
     -- timeout or a server-side error).
+    -- Using a lockpick item with no vehicle in reach / when no pick is needed.
+    lockpickNoVehicle = 'There is no vehicle close enough to lockpick.',
+    lockpickNotNeeded = 'You do not need a lockpick for this vehicle.',
     hotwireNoResponse = 'Hotwiring could not start: no response from the server. Try again in a moment.',
 }
 

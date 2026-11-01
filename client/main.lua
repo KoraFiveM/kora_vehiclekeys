@@ -104,6 +104,35 @@ end
 RegisterNetEvent('qb-vehiclekeys:client:ToggleEngine')
 AddEventHandler('qb-vehiclekeys:client:ToggleEngine', toggleEngine)
 
+-- Item-driven lockpick (lockpick / advancedlockpick use): works on foot next to
+-- a vehicle or from inside one, and always explains why it did nothing.
+local function lockpickFromItem()
+    if busyHotwiring then return end
+    local vehicle = currentOrClosestVehicle(Config.InteractionDistance)
+    local networkId = vehicle and vehicleNetworkId(vehicle)
+    if not networkId then return notify(Config.Text.lockpickNoVehicle, 'error', Config.Text.titleHotwireFailed) end
+    local ped = PlayerPedId()
+    if GetVehiclePedIsIn(ped, false) == vehicle and GetPedInVehicleSeat(vehicle, -1) ~= ped then
+        return notify('You must be in the driver seat.', 'error', Config.Text.titleHotwireFailed)
+    end
+
+    busyHotwiring = true
+    CreateThread(function()
+        if GetIsVehicleEngineRunning(vehicle) or hasIgnitionAccess(vehicle) then
+            busyHotwiring = false
+            return notify(Config.Text.lockpickNotNeeded, 'info', Config.Text.titleHotwire)
+        end
+        local authorization, err = Kora.callback.trigger('qbvehiclekeys:server:hotwireStarted', networkId)
+        if not authorization then
+            busyHotwiring = false
+            return notify(err or Config.Text.hotwireNoResponse, 'error', Config.Text.titleHotwireFailed)
+        end
+        local result = Kora.minigames.play('lockpick', nil, authorization)
+        Kora.events.trigger('qbvehiclekeys:server:hotwireFinished', authorization, result and result.proof or nil)
+        busyHotwiring = false
+    end)
+end
+
 local function hotwireCurrentVehicle()
     if busyHotwiring then return end
     -- The hotwire key can share a physical key with other controls (H is also
@@ -151,6 +180,12 @@ end)
 Kora.events.onPush('qbvehiclekeys:client:keysChanged', function()
     accessCache = {}
 end)
+
+Kora.events.onPush('qbvehiclekeys:client:lockpickUsed', lockpickFromItem)
+
+-- Stock qb-inventory / qb-vehiclekeys event for a lockpick use.
+RegisterNetEvent('lockpicks:UseLockpick')
+AddEventHandler('lockpicks:UseLockpick', function() lockpickFromItem() end)
 
 Kora.events.onPush('qbvehiclekeys:client:physicalKeyUsed', function(metadata)
     if type(metadata) ~= 'table' then return end

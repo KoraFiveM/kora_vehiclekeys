@@ -116,16 +116,27 @@ local function setLocked(vehicle, networkId, locked)
     Kora.events.push(-1, 'qbvehiclekeys:client:lockStateChanged', networkId, locked == true)
 end
 
-local function lockpickItem(src)
-    local item = exports.kora_core:getItemByName(src, Config.Lockpick.item)
-    return item and item.slot or nil
+local function lockpickNames()
+    local names = Config.Lockpick.items
+    if type(names) ~= 'table' or #names == 0 then return { Config.Lockpick.item } end
+    return names
 end
 
-local function maybeBreakLockpick(src, slot, successful)
+---@return integer|nil slot
+---@return string|nil itemName
+local function lockpickItem(src)
+    for _, name in ipairs(lockpickNames()) do
+        local item = exports.kora_core:getItemByName(src, name)
+        if item then return item.slot, name end
+    end
+    return nil
+end
+
+local function maybeBreakLockpick(src, slot, successful, itemName)
     local chances = Config.Lockpick.breakChance or {}
     local chance = tonumber(successful and chances.success or chances.failure) or 0
     if chance <= 0 or math.random(100) > chance then return end
-    exports.kora_core:removeItem(src, Config.Lockpick.item, 1, slot, 'vehicle-lockpick-broke')
+    exports.kora_core:removeItem(src, itemName or Config.Lockpick.item, 1, slot, 'vehicle-lockpick-broke')
     Kora.notify.send(src, { title = Config.Text.titleHotwireFailed, message = 'Your lockpick broke.', type = 'error' })
 end
 
@@ -174,6 +185,17 @@ if Config.PhysicalKey.enabled then
     end)
 end
 
+-- Using a lockpick item only asks the client to start the lockpick flow; the
+-- server still validates the vehicle, keys and the item in hotwireStarted.
+-- Nothing is consumed here: breaking stays with maybeBreakLockpick.
+if Config.Lockpick.registerUsable ~= false then
+    for _, name in ipairs(lockpickNames()) do
+        exports.kora_core:createUseable(name, function(src)
+            Kora.events.push(src, 'qbvehiclekeys:client:lockpickUsed')
+        end)
+    end
+end
+
 Kora.callback.register('qbvehiclekeys:server:accessRequested', function(src, networkId)
     local vehicle = validateVehicle(src, networkId, Config.InteractionDistance, true)
     if not vehicle then return false end
@@ -207,12 +229,12 @@ Kora.callback.register('qbvehiclekeys:server:hotwireStarted', function(src, netw
     if not plate then return nil, 'Vehicle has no usable plate.' end
     if hasVehicleAccess(src, vehicle, plate) then return nil, 'You already have the keys.' end
 
-    local slot = lockpickItem(src)
+    local slot, itemName = lockpickItem(src)
     if not slot then return nil, 'You need a lockpick.' end
     local authorization = Kora.minigames.authorizeProof(src, 'lockpick', Config.Lockpick.difficulty)
     if not authorization then return nil, 'Could not start the lockpick challenge.' end
 
-    hotwireSessions[src] = { authorization = authorization, networkId = networkId, plate = plate, slot = slot }
+    hotwireSessions[src] = { authorization = authorization, networkId = networkId, plate = plate, slot = slot, item = itemName }
     return authorization
 end, { rateLimit = Config.RateLimits.hotwire })
 
@@ -225,7 +247,7 @@ Kora.events.register('qbvehiclekeys:server:hotwireFinished', function(src, autho
     if not vehicle or normalisePlate(GetVehicleNumberPlateText(vehicle)) ~= session.plate then return end
     local successful = type(proof) == 'string'
         and Kora.minigames.consumeProof(src, proof, 'lockpick', authorization) == true
-    maybeBreakLockpick(src, session.slot, successful)
+    maybeBreakLockpick(src, session.slot, successful, session.item)
     if not successful then
         return Kora.notify.send(src, { title = Config.Text.titleHotwireFailed, message = 'The ignition resisted your lockpick.', type = 'error' })
     end
