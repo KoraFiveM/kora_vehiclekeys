@@ -211,8 +211,7 @@ Kora.callback.register('qbvehiclekeys:server:toggleRequested', function(src, net
         return nil, 'You do not have the keys for this vehicle.'
     end
 
-    local locked = Entity(vehicle).state['qbvehiclekeys:locked'] == true
-    locked = not locked
+    local locked = Entity(vehicle).state['qbvehiclekeys:locked'] ~= true
     setLocked(vehicle, networkId, locked)
     local feedback = Config.lockFeedback or {}
     if feedback.lights == true or feedback.soundNearby == true then
