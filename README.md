@@ -53,12 +53,30 @@ Legacy `qb-vehiclekeys:HasKeys(source, plate)` on the server reads the existing 
 |---|---|
 | server export `GiveKeys(src, plate)` / `RemoveKeys(src, plate)` | Trusted server callers; map to `giveKeys` / `removeKeys` (so `Config.AllowTemporaryKeys` applies). Swapped `(plate, src)` is tolerated. |
 | event `qb-vehiclekeys:server:setVehLockState(netId, state)` | Requires the sender to have access (key/job) to the validated, in-range vehicle; `state >= 2` locks. |
-| event `qb-vehiclekeys:server:GiveVehicleKeys(receiver, plate)` | Sender must hold the key; receiver must be online and within `Config.InteractionDistance`. |
+| server export `GiveKeys(src)` | Without a plate the vehicle the player is in is used (stock). |
+| event `qb-vehiclekeys:server:GiveVehicleKeys(receiver \| {receivers}, plate)` | Sender must hold the key; each receiver (at most 8) must be online and within `Config.InteractionDistance`. |
+| event `qb-vehiclekeys:server:RemoveVehicleKeys(plate)` | Drops the sender's own temporary key only; nobody else's keys can be removed. |
+| callbacks `qb-vehiclekeys:server:GetVehicleKeys`, `qb-vehiclekeys:server:checkPlayerOwned(plate)` | `{ [plate] = true }` for the caller's own session keys (plus matching key items); `checkPlayerOwned` is true when the caller holds the key or the plate is a `player_vehicles` row. Other players' keys are never revealed. |
+| commands `givekeys [id]`, `addkeys <id> <plate>` (admin), `removekeys <id> <plate>` (admin), `togglelocks`, `engine` | Stock names and help. `givekeys` runs the client event below; the admin ones use kora_core permissions, validate the target, and are logged through `Kora.logging` (`vehiclekeys:addkeys` / `vehiclekeys:removekeys`). `togglelocks`/`engine` run the same flows as the `L`/`G` keybinds (no extra key mapping, so keys are not bound twice). |
+| client event `qb-vehiclekeys:client:GiveKeys(id)` | Stock flow: the id, else every other player in your vehicle, else the closest player within 1.5 m. Sent to the server, which checks that you hold the key and that each receiver is in range. |
+| client event `lockpicks:UseLockpick(isAdvanced)` and the `lockpick` / `advancedlockpick` items | See "Lockpick items" below. |
+| client exports `addNoLockVehicles(model)` / `removeNoLockVehicles(model)` | Client-local and advisory: this client stops starting lock toggles for those models. The server never reads the list, so it cannot unlock or exempt any vehicle (stock also exempted `ignoreLocks` state bags and NPC lock logic; those are not mapped). |
+| event `qb-vehiclekeys:server:breakLockpick(item)` | Accepted and ignored. Kora rolls lockpick breakage on the server (`breakChance`), so a client can never ask for an item to be removed. |
 | event `qb-vehiclekeys:server:AcquireVehicleKeys(netId \| plate)` and client events `qb-vehiclekeys:client:AddKeys`, `vehiclekeys:client:SetOwner` | Stock sends a vehicle network id; a plate is also accepted (resolved only against the vehicle the player is inside). The client events look the plate up locally (current vehicle first, then within 15 m) and send the network id. With `Config.LegacyClientGrants = false` (default) the request is decided by `Config.TrustedSetOwner`, below. With `Config.LegacyClientGrants = true` it is honoured only for the vehicle the player is driving (this lets a driver skip hotwiring). |
 | client event `qb-vehiclekeys:client:ToggleEngine` and the engine key (`Config.EngineKeybind`, default `G`) | Driver only; the engine toggles only if the server confirms keys or job access (same check as ignition). |
 | client event `qb-vehiclekeys:client:RemoveKeys(plate)` | Drops the player's own temporary key. |
 
-Not mapped: server-to-client `TriggerClientEvent('qb-vehiclekeys:client:AddKeys', ...)` from other server scripts cannot grant keys (the server cannot intercept it); use `exports['qb-vehiclekeys']:GiveKeys(src, plate)` or `exports.kora_vehiclekeys:giveKeys`. `breakLockpick` and client-side exports other than `HasKeys` are not provided. Stock events are throttled to one call per 500 ms per player.
+Keys are session-only here. Stock persists them in player metadata (`Config.PersistentKeys`, default true), so that part is not at parity; use physical key items for keys that must survive a restart.
+
+Not mapped: server-to-client `TriggerClientEvent('qb-vehiclekeys:client:AddKeys', ...)` from other server scripts cannot grant keys (the server cannot intercept it); use `exports['qb-vehiclekeys']:GiveKeys(src, plate)` or `exports.kora_vehiclekeys:giveKeys`. Stock events are throttled to one call per 500 ms per player.
+
+### Lockpick items
+
+With `Config.Lockpick.registerUsable` (default), every item in `Config.Lockpick.items` (`lockpick`, `advancedlockpick`) is registered as useable through kora_core; using one pushes `qbvehiclekeys:client:lockpickUsed`, and the stock client event `lockpicks:UseLockpick` runs the same client flow. Set `registerUsable = false` if another resource registers the items. From the driver seat the flow is hotwiring (`hotwireStarted`): success unlocks and grants a session key per `Config.Hotwire.grantTemporaryKey`. On foot next to a locked vehicle (within `Config.InteractionDistance`) it calls `lockpickStarted`: the server checks the vehicle, that it is locked, that you have no access and that you hold a configured pick, then authorises the minigame (`Config.Lockpick.difficulty`) and on success unlocks the doors only, with no key. `Config.Lockpick.breakChance` breaks the pick that was used. Stock's police alert and stress gain on failure are not part of this resource.
+
+### Client AddKeys / SetOwner
+
+Client `qb-vehiclekeys:client:AddKeys` and `vehiclekeys:client:SetOwner` only ask the server (see Trusted SetOwner); a client can never grant itself a key.
 
 ### Trusted SetOwner (stock `/car` and job vehicles)
 

@@ -20,6 +20,8 @@ local function vector(x, y, z) return setmetatable({ x = x, y = y, z = z }, vect
 
 _G.Kora = {
     callback = { register = function(name, handler) callbacks[name] = handler end },
+    commands = { add = function() end },
+    logging = { event = function() end },
     events = {
         register = function(name, handler) events[name] = handler end,
         push = function(target, name, ...) pushes[#pushes + 1] = { target = target, name = name, values = { ... } } end,
