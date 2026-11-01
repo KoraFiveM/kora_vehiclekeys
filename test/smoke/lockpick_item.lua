@@ -15,6 +15,8 @@ _G.Kora = {
         register = function(name, handler) events[name] = handler end,
         push = function(target, name) pushes[#pushes + 1] = { target = target, name = name } end,
     },
+    commands = { add = function() end },
+    logging = { event = function() end },
     notify = { send = function(_, o) notices[#notices + 1] = o end },
     minigames = {
         authorizeProof = function() return 'auth' end,
@@ -35,7 +37,9 @@ _G.exports = setmetatable({
 _G.GetVehicleNumberPlateText = function() return 'ABC 123' end
 _G.GetEntityModel = function() return 1 end
 _G.joaat = function() return 0 end
-_G.Entity = function() return { state = { set = function() end } } end
+local states = {}
+_G.GetVehicleDoorLockStatus = function() return 0 end
+_G.Entity = function() return { state = setmetatable({ set = function() end }, { __index = function(_, key) if key == 'qbvehiclekeys:locked' then return states.locked end end }) } end
 _G.AddEventHandler = function() end
 _G.RegisterNetEvent = function() end
 _G.GetGameTimer = function() return 0 end
@@ -55,6 +59,15 @@ end)
 
 harness.test('the held advanced lockpick starts the minigame and is the one that breaks', function()
     harness.assertEqual(callbacks['qbvehiclekeys:server:hotwireStarted'](1, 7), 'auth')
+    events['qbvehiclekeys:server:hotwireFinished'](1, 'auth', 'bad')
+    harness.assertEqual(removed[1].name, 'advancedlockpick')
+    harness.assertEqual(removed[1].slot, 4)
+end)
+
+harness.test('the on-foot door pick finds the held pick and breaks that one', function()
+    removed = {}
+    states.locked = true
+    harness.assertEqual(callbacks['qbvehiclekeys:server:lockpickStarted'](1, 7), 'auth')
     events['qbvehiclekeys:server:hotwireFinished'](1, 'auth', 'bad')
     harness.assertEqual(removed[1].name, 'advancedlockpick')
     harness.assertEqual(removed[1].slot, 4)

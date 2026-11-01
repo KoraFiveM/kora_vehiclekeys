@@ -76,8 +76,18 @@ local function bikeGuardTick()
 end
 bikeGuardTick()
 
+-- Models registered through the stock addNoLockVehicles export. Client-local
+-- and advisory: it only stops this client initiating lock toggles for them; the
+-- server never reads it, so it cannot unlock or exempt any vehicle.
+local noLockModels = {}
+
+local function isNoLockVehicle(vehicle)
+    return next(noLockModels) ~= nil and noLockModels[GetEntityModel(vehicle)] == true
+end
+
 local function toggleNearestVehicle()
     local vehicle = currentOrClosestVehicle(Config.RemoteDistance)
+    if vehicle and isNoLockVehicle(vehicle) then return end
     local networkId = vehicleNetworkId(vehicle)
     if not networkId then return notify('No nearby networked vehicle.', 'error') end
     local locked, err = Kora.callback.trigger('qbvehiclekeys:server:toggleRequested', networkId)
@@ -112,17 +122,19 @@ local function lockpickFromItem()
     local networkId = vehicle and vehicleNetworkId(vehicle)
     if not networkId then return notify(Config.Text.lockpickNoVehicle, 'error', Config.Text.titleHotwireFailed) end
     local ped = PlayerPedId()
-    if GetVehiclePedIsIn(ped, false) == vehicle and GetPedInVehicleSeat(vehicle, -1) ~= ped then
+    local inVehicle = GetVehiclePedIsIn(ped, false) == vehicle
+    if inVehicle and GetPedInVehicleSeat(vehicle, -1) ~= ped then
         return notify('You must be in the driver seat.', 'error', Config.Text.titleHotwireFailed)
     end
 
     busyHotwiring = true
     CreateThread(function()
-        if GetIsVehicleEngineRunning(vehicle) or hasIgnitionAccess(vehicle) then
+        if inVehicle and (GetIsVehicleEngineRunning(vehicle) or hasIgnitionAccess(vehicle)) then
             busyHotwiring = false
             return notify(Config.Text.lockpickNotNeeded, 'info', Config.Text.titleHotwire)
         end
-        local authorization, err = Kora.callback.trigger('qbvehiclekeys:server:hotwireStarted', networkId)
+        local authorization, err = Kora.callback.trigger(
+            inVehicle and 'qbvehiclekeys:server:hotwireStarted' or 'qbvehiclekeys:server:lockpickStarted', networkId)
         if not authorization then
             busyHotwiring = false
             return notify(err or Config.Text.hotwireNoResponse, 'error', Config.Text.titleHotwireFailed)
@@ -132,6 +144,15 @@ local function lockpickFromItem()
         busyHotwiring = false
     end)
 end
+
+VehicleKeys = {
+    notify = notify,
+    noLockModels = noLockModels,
+    vehicleNetworkId = vehicleNetworkId,
+    currentOrClosestVehicle = currentOrClosestVehicle,
+    toggleLocks = toggleNearestVehicle,
+    toggleEngine = toggleEngine,
+}
 
 local function hotwireCurrentVehicle()
     if busyHotwiring then return end
