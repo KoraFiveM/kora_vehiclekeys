@@ -235,7 +235,94 @@ Kora.events.register('qbvehiclekeys:server:hotwireFinished', function(src, autho
     Kora.notify.send(src, { title = Config.Text.titleHotwire, message = 'Vehicle hotwired.', type = 'success' })
 end, { rateLimit = Config.RateLimits.hotwire })
 
+-- --- Legacy qb-vehiclekeys surface -----------------------------------------
+-- Server exports are trusted callers (other server scripts) and map straight
+-- onto giveKeys/removeKeys, so Config.AllowTemporaryKeys still applies. Net
+-- events below are UNTRUSTED client input: each one re-derives authority on the
+-- server (key ownership, driver seat, distance) exactly like the callbacks
+-- above and never accepts a client's claim about who or what it may affect.
+local function isOnline(src)
+    return type(src) == 'number' and src >= 1 and src % 1 == 0 and GetPlayerPed(src) ~= 0
+end
+
+-- Stock servers call (id, plate); tolerate swapped arguments.
+local function legacyArgs(a, b)
+    if type(a) == 'string' and type(b) == 'number' then a, b = b, a end
+    return a, b
+end
+
+Kora.compat.provideExport('qb-vehiclekeys', 'GiveKeys', function(a, b)
+    local src, plate = legacyArgs(a, b)
+    if not isOnline(src) then return false end
+    return giveKeys(src, plate)
+end)
+
+Kora.compat.provideExport('qb-vehiclekeys', 'RemoveKeys', function(a, b)
+    local src, plate = legacyArgs(a, b)
+    if not isOnline(src) then return false end
+    return removeKeys(src, plate)
+end)
+
+local legacyLastCall = {}
+local function legacyThrottled(src, name)
+    local now = GetGameTimer()
+    local bySource = legacyLastCall[src]
+    if not bySource then bySource = {}; legacyLastCall[src] = bySource end
+    if bySource[name] and now - bySource[name] < 500 then return true end
+    bySource[name] = now
+    return false
+end
+
+local function legacyEvent(name, handler)
+    RegisterNetEvent(name)
+    AddEventHandler(name, function(...)
+        local src = source
+        if not isOnline(src) or legacyThrottled(src, name) then return end
+        handler(src, ...)
+    end)
+end
+
+-- Stock: the client claims a plate and the server hands it keys. Honoured only
+-- when Config.LegacyClientGrants is on, and then only for the vehicle the
+-- player is actually driving, with a matching plate.
+legacyEvent('qb-vehiclekeys:server:AcquireVehicleKeys', function(src, plate)
+    if Config.LegacyClientGrants ~= true then return end
+    plate = type(plate) == 'string' and normalisePlate(plate) or nil
+    if not plate then return end
+    local ped = GetPlayerPed(src)
+    local vehicle = GetVehiclePedIsIn(ped, false)
+    if not vehicle or vehicle == 0 or GetPedInVehicleSeat(vehicle, -1) ~= ped then return end
+    if normalisePlate(GetVehicleNumberPlateText(vehicle)) ~= plate then return end
+    giveKeys(src, plate)
+end)
+
+-- Stock: set a vehicle's lock state (1 unlocked, 2+ locked). Requires access.
+legacyEvent('qb-vehiclekeys:server:setVehLockState', function(src, networkId, state)
+    if type(networkId) ~= 'number' or type(state) ~= 'number' then return end
+    local vehicle = validateVehicle(src, networkId, Config.RemoteDistance, false)
+    if not vehicle then return end
+    local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
+    if not plate or not hasVehicleAccess(src, vehicle, plate) then return end
+    setLocked(vehicle, networkId, state >= 2)
+end)
+
+-- Stock: hand a copy of a key to a nearby player. The giver must hold the key.
+legacyEvent('qb-vehiclekeys:server:GiveVehicleKeys', function(src, receiver, plate)
+    plate = type(plate) == 'string' and normalisePlate(plate) or nil
+    if not plate or not isOnline(receiver) or receiver == src then return end
+    if not hasAccess(src, plate) then return end
+    local distance = #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(GetPlayerPed(receiver)))
+    if distance > Config.InteractionDistance then return end
+    giveKeys(receiver, plate)
+end)
+
+-- A client dropping its OWN temporary key (from qb-vehiclekeys:client:RemoveKeys).
+legacyEvent('qb-vehiclekeys:server:RemoveOwnKeys', function(src, plate)
+    if type(plate) == 'string' then removeKeys(src, plate) end
+end)
+
 AddEventHandler('playerDropped', function()
     temporaryKeys[source] = nil
     hotwireSessions[source] = nil
+    legacyLastCall[source] = nil
 end)

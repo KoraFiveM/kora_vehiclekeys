@@ -43,7 +43,21 @@ For a vehicle plate `QB 123`, its key needs `info = { plate = 'QB 123' }`. Addit
 
 Keep `Config.AllowTemporaryKeys = true` if vehicle sources use the exports above. Set it to `false` for an item-only setup. Hotwiring can separately grant an in-memory key through `Config.Hotwire.grantTemporaryKey`.
 
-Legacy `qb-vehiclekeys:HasKeys(source, plate)` on the server reads the existing physical/temporary key policy. The client `HasKeys(plate)` performs a rate-limited, read-only server callback for the requesting player and may yield; a timeout returns false. This alias does not grant keys, bypass metadata validation, or include job-vehicle access that is unrelated to physical keys. Other stock events and synchronously cached key state need separate compatibility validation.
+Legacy `qb-vehiclekeys:HasKeys(source, plate)` on the server reads the existing physical/temporary key policy. The client `HasKeys(plate)` performs a rate-limited, read-only server callback for the requesting player and may yield; a timeout returns false. This alias does not grant keys, bypass metadata validation, or include job-vehicle access that is unrelated to physical keys. 
+
+### Wider qb-vehiclekeys alias
+
+`provide 'qb-vehiclekeys'` also covers (server authority is kept; clients never choose who gets keys):
+
+| Stock surface | Behaviour |
+|---|---|
+| server export `GiveKeys(src, plate)` / `RemoveKeys(src, plate)` | Trusted server callers; map to `giveKeys` / `removeKeys` (so `Config.AllowTemporaryKeys` applies). Swapped `(plate, src)` is tolerated. |
+| event `qb-vehiclekeys:server:setVehLockState(netId, state)` | Requires the sender to have access (key/job) to the validated, in-range vehicle; `state >= 2` locks. |
+| event `qb-vehiclekeys:server:GiveVehicleKeys(receiver, plate)` | Sender must hold the key; receiver must be online and within `Config.InteractionDistance`. |
+| event `qb-vehiclekeys:server:AcquireVehicleKeys(plate)` and client events `qb-vehiclekeys:client:AddKeys`, `vehiclekeys:client:SetOwner` | **Ignored by default** (a client naming a plate would be a self-grant). With `Config.LegacyClientGrants = true`, honoured only for the vehicle the player is driving with a matching plate (this lets a driver skip hotwiring). |
+| client event `qb-vehiclekeys:client:RemoveKeys(plate)` | Drops the player's own temporary key. |
+
+Not mapped: server-to-client `TriggerClientEvent('qb-vehiclekeys:client:AddKeys', ...)` from other server scripts cannot grant keys (the server cannot intercept it); use `exports['qb-vehiclekeys']:GiveKeys(src, plate)` or `exports.kora_vehiclekeys:giveKeys`. `ToggleEngine`, `breakLockpick` and client-side exports other than `HasKeys` are not provided. Stock events are throttled to one call per 500 ms per player.
 
 ## Lock feedback
 

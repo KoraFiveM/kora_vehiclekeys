@@ -1,6 +1,7 @@
 local scriptDir = debug.getinfo(1, 'S').source:match('@?(.*/)')
 local root = scriptDir .. '../../'
 local handler, response, requested, calls = nil, nil, nil, 0
+function RegisterNetEvent() end
 function AddEventHandler(_, fn) fn(function(value) handler=value end) end
 Kora = { callback = {trigger=function(name, plate)
     calls=calls+1; requested={name,plate}; return response

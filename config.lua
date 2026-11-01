@@ -22,6 +22,14 @@ Config.allowPickupLockedBikes = false
 -- dealerships, and job resources can grant them with exports.kora_vehiclekeys:giveKeys.
 Config.AllowTemporaryKeys = true
 
+-- Stock qb-vehiclekeys let a client ask for keys to a plate it names. That is
+-- unsafe by default, so those requests (qb-vehiclekeys:server:AcquireVehicleKeys,
+-- and the client AddKeys / SetOwner events that forward to it) are ignored.
+-- Set true to honour them ONLY for the vehicle the player is currently driving
+-- with a matching plate (note: this lets a driver skip hotwiring). Server
+-- scripts should use exports.kora_vehiclekeys:giveKeys instead.
+Config.LegacyClientGrants = false
+
 -- Jobs listed here can use the configured vehicle models without holding a
 -- plate key. Model names are the vehicle spawn names, not display labels.
 --
