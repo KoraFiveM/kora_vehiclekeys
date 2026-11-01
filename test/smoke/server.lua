@@ -78,6 +78,8 @@ _G.Entity = function(entity)
 end
 local legacyEvents = {}
 _G.AddEventHandler = function(name, fn) legacyEvents[name] = fn end
+_G.RegisterNetEvent = function() end
+_G.GetGameTimer = function() return 0 end
 Kora.compat = dofile(resourceDir .. '../kora_lib/compat/provider.lua')()
 
 dofile(resourceDir .. 'config.lua')
