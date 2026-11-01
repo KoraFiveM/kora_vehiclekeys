@@ -235,7 +235,6 @@ Kora.events.register('qbvehiclekeys:server:hotwireFinished', function(src, autho
     Kora.notify.send(src, { title = Config.Text.titleHotwire, message = 'Vehicle hotwired.', type = 'success' })
 end, { rateLimit = Config.RateLimits.hotwire })
 
--- --- Legacy qb-vehiclekeys surface -----------------------------------------
 -- Server exports are trusted callers (other server scripts) and map straight
 -- onto giveKeys/removeKeys, so Config.AllowTemporaryKeys still applies. Net
 -- events below are UNTRUSTED client input: each one re-derives authority on the
