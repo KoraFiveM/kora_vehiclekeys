@@ -75,6 +75,18 @@ Config.Hotwire = {
     grantTemporaryKey = true,
 }
 
+-- Notification text. This resource has no locale files, so titles and the
+-- generic hotwire fallback live here; edit them to translate or rebrand.
+-- Hotwire notifications use the hotwire titles, key/lock notifications use keys.
+Config.Text = {
+    titleKeys = 'Vehicle Keys',
+    titleHotwire = 'Hotwire',
+    titleHotwireFailed = 'Hotwire Failed',
+    -- Shown when the server gives no reason at all (callback rate limit,
+    -- timeout or a server-side error).
+    hotwireNoResponse = 'Hotwiring could not start: no response from the server. Try again in a moment.',
+}
+
 -- Feedback after a successful lock/unlock (failed attempts never give feedback).
 -- Every key is read each time a vehicle is toggled, so changes apply live.
 Config.lockFeedback = {

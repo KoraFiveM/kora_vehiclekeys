@@ -126,7 +126,7 @@ local function maybeBreakLockpick(src, slot, successful)
     local chance = tonumber(successful and chances.success or chances.failure) or 0
     if chance <= 0 or math.random(100) > chance then return end
     exports.kora_core:removeItem(src, Config.Lockpick.item, 1, slot, 'vehicle-lockpick-broke')
-    Kora.notify.send(src, { title = 'Vehicle keys', message = 'Your lockpick broke.', type = 'error' })
+    Kora.notify.send(src, { title = Config.Text.titleHotwireFailed, message = 'Your lockpick broke.', type = 'error' })
 end
 
 ---@param src integer
@@ -227,12 +227,12 @@ Kora.events.register('qbvehiclekeys:server:hotwireFinished', function(src, autho
         and Kora.minigames.consumeProof(src, proof, 'lockpick', authorization) == true
     maybeBreakLockpick(src, session.slot, successful)
     if not successful then
-        return Kora.notify.send(src, { title = 'Vehicle keys', message = 'The ignition resisted your lockpick.', type = 'error' })
+        return Kora.notify.send(src, { title = Config.Text.titleHotwireFailed, message = 'The ignition resisted your lockpick.', type = 'error' })
     end
 
     if Config.Hotwire.grantTemporaryKey then giveKeys(src, session.plate, true) end
     setLocked(vehicle, session.networkId, false)
-    Kora.notify.send(src, { title = 'Vehicle keys', message = 'Vehicle hotwired.', type = 'success' })
+    Kora.notify.send(src, { title = Config.Text.titleHotwire, message = 'Vehicle hotwired.', type = 'success' })
 end, { rateLimit = Config.RateLimits.hotwire })
 
 AddEventHandler('playerDropped', function()
