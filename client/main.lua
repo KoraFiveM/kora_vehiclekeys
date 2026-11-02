@@ -40,9 +40,31 @@ local function hasIgnitionAccess(vehicle)
     local cached = accessCache[networkId]
     if cached and cached.expiresAt > GetGameTimer() then return cached.allowed end
 
-    local allowed = Kora.callback.trigger('qbvehiclekeys:server:accessRequested', networkId) == true
+    -- A raised callback (timeout, rate limit) counts as "no access" and is not
+    -- cached; it must never abort the calling thread (the hotwire busy flag).
+    local ok, result = pcall(Kora.callback.trigger, 'qbvehiclekeys:server:accessRequested', networkId)
+    if not ok then return false end
+    local allowed = result == true
     accessCache[networkId] = { allowed = allowed, expiresAt = GetGameTimer() + Config.AccessCacheMs }
     return allowed
+end
+
+-- Starts a hotwire/lockpick session on the server. A callback that errors,
+-- times out or is rate limited raises inside kora_lib, so it is caught here:
+-- the busy flag must always be released and the player only sees the generic
+-- Config.Text.hotwireFailed. The technical detail goes to the debug log.
+local function requestHotwireSession(callbackName, networkId)
+    local ok, authorization, err = pcall(Kora.callback.trigger, callbackName, networkId)
+    if not ok then
+        if Config.Hotwire.debug == true then
+            print(("[kora_vehiclekeys] %s: no response from the server (%s)"):format(callbackName, tostring(authorization)))
+        end
+        return nil
+    end
+    if not authorization and not err and Config.Hotwire.debug == true then
+        print(("[kora_vehiclekeys] %s: server returned no authorization and no reason"):format(callbackName))
+    end
+    return authorization, err
 end
 
 local lastBikeNotice = 0
@@ -137,7 +159,7 @@ local function lockpickFromItem()
             inVehicle and 'qbvehiclekeys:server:hotwireStarted' or 'qbvehiclekeys:server:lockpickStarted', networkId)
         if not authorization then
             busyHotwiring = false
-            return notify(err or Config.Text.hotwireNoResponse, 'error', Config.Text.titleHotwireFailed)
+            return notify(err or Config.Text.hotwireFailed, 'error', Config.Text.titleHotwireFailed)
         end
         local result = Kora.minigames.play('lockpick', nil, authorization)
         Kora.events.trigger('qbvehiclekeys:server:hotwireFinished', authorization, result and result.proof or nil)
@@ -177,10 +199,10 @@ local function hotwireCurrentVehicle()
             busyHotwiring = false
             return
         end
-        local authorization, err = Kora.callback.trigger('qbvehiclekeys:server:hotwireStarted', networkId)
+        local authorization, err = requestHotwireSession('qbvehiclekeys:server:hotwireStarted', networkId)
         if not authorization then
             busyHotwiring = false
-            return notify(err or Config.Text.hotwireNoResponse, 'error', Config.Text.titleHotwireFailed)
+            return notify(err or Config.Text.hotwireFailed, 'error', Config.Text.titleHotwireFailed)
         end
         local result = Kora.minigames.play('lockpick', nil, authorization)
         Kora.events.trigger('qbvehiclekeys:server:hotwireFinished', authorization, result and result.proof or nil)

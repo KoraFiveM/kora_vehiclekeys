@@ -7,6 +7,7 @@ local harness = require('harness')
 local keybinds, notifications, triggers = {}, {}, {}
 local inVehicle, isDriver, engineOn, networked, hasKeys = true, true, false, true, false
 local ped, vehicle = 10, 70
+local hotwireMode
 
 _G.PlayerPedId = function() return ped end
 _G.GetVehiclePedIsIn = function() return inVehicle and vehicle or 0 end
@@ -34,6 +35,9 @@ local api = {
     entities = { requestControl = function() return true end },
     callback = { trigger = function(name)
         triggers[#triggers + 1] = name
+        if hotwireMode == "raise" then error("Callback timed out.") end
+        if hotwireMode == "silent" then return nil end
+        if hotwireMode == "reason" then return nil, "You need a lockpick." end
         if name == 'qbvehiclekeys:server:accessRequested' then return hasKeys end
         if name == 'qbvehiclekeys:server:hotwireStarted' then return 'auth' end
     end },
@@ -94,6 +98,23 @@ harness.test('notifyUnavailable restores the error messages', function()
     harness.assertEqual(#notifications, 1); harness.assertEqual(notifications[1].message, 'You must be in the driver seat.')
     harness.assertEqual(notifications[1].title, Config.Text.titleHotwireFailed)
     Config.Hotwire.notifyUnavailable = false
+end)
+
+harness.test("failed hotwire shows the configured text, not the no-response detail", function()
+    for _, mode in ipairs({ "silent", "raise" }) do
+        reset(); hotwireMode = mode; press()
+        harness.assertEqual(#notifications, 1)
+        harness.assertEqual(notifications[1].title, "Hotwire Failed")
+        harness.assertEqual(notifications[1].message, "Attempt to hotwire vehicle failed.")
+        hotwireMode = nil
+        press() -- busy flag was released, hotwiring can start again
+        harness.assertTrue(started())
+    end
+end)
+
+harness.test("a specific server reason is still shown", function()
+    reset(); hotwireMode = "reason"; press(); hotwireMode = nil
+    harness.assertEqual(notifications[1].message, "You need a lockpick.")
 end)
 
 harness.report('qbvehiclekeys hotwire key')

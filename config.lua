@@ -115,6 +115,9 @@ Config.Hotwire = {
     -- A successful hotwire grants an in-memory session key. Set false when a
     -- server wants hotwiring to unlock doors only, without allowing ignition.
     grantTemporaryKey = true,
+    -- Print technical hotwire failures (e.g. no response from the server) to
+    -- the client console. Players only ever see Config.Text.hotwireFailed.
+    debug = false,
 }
 
 -- Notification text. This resource has no locale files, so titles and the
@@ -124,12 +127,12 @@ Config.Text = {
     titleKeys = 'Vehicle Keys',
     titleHotwire = 'Hotwire',
     titleHotwireFailed = 'Hotwire Failed',
-    -- Shown when the server gives no reason at all (callback rate limit,
-    -- timeout or a server-side error).
     -- Using a lockpick item with no vehicle in reach / when no pick is needed.
     lockpickNoVehicle = 'There is no vehicle close enough to lockpick.',
     lockpickNotNeeded = 'You do not need a lockpick for this vehicle.',
-    hotwireNoResponse = 'Hotwiring could not start: no response from the server. Try again in a moment.',
+    -- Shown when hotwiring fails and the server gives no specific reason
+    -- (callback rate limit, timeout or a server-side error).
+    hotwireFailed = 'Attempt to hotwire vehicle failed.',
 }
 
 -- Feedback after a successful lock/unlock (failed attempts never give feedback).
