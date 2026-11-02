@@ -59,7 +59,7 @@ _G.Kora = {
     events = { onPush = function() end, trigger = function(name, ...) triggered[#triggered + 1] = { name, ... } end },
     state = { onChange = function() end },
     keybind = { add = function() end },
-    cache = { onChange = function() end },
+    cache = { onChange = function() end, enteringVehicle = function() return false end },
     minigames = { play = function() minigames = minigames + 1 return { proof = 'proof' } end },
 }
 Kora.compat = dofile(resourceDir .. '../kora_lib/compat/provider.lua')()

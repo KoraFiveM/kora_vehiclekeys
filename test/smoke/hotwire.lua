@@ -44,7 +44,7 @@ local api = {
     events = { onPush = function() end, trigger = function(name) triggers[#triggers + 1] = name end },
     state = { onChange = function() end },
     keybind = { add = function(o) keybinds[#keybinds + 1] = o end },
-    cache = { onChange = function() end },
+    cache = { onChange = function() end, enteringVehicle = function() return false end },
     minigames = { play = function() return { proof = 'p' } end },
     textui = { show = function() return 1 end, hide = function() end },
 }

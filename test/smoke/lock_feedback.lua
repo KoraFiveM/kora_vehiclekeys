@@ -57,7 +57,7 @@ _G.Kora = {
     events = { onPush = function(name, fn) pushHandlers[name] = fn end, trigger = function() end },
     state = { onChange = function() end },
     keybind = { add = function(o) keybinds[#keybinds + 1] = o end },
-    cache = { onChange = function() end },
+    cache = { onChange = function() end, enteringVehicle = function() return false end },
     minigames = {},
     textui = {
         show = function(text, opts) shown = shown + 1; log[#log + 1] = { 'textui', text, opts.position }; return shown end,

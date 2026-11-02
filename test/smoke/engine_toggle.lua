@@ -31,7 +31,7 @@ _G.Kora = {
     events = { onPush = function() end, trigger = function() end },
     state = { onChange = function() end },
     keybind = { add = function(o) keybinds[o.name] = o end },
-    cache = { onChange = function() end },
+    cache = { onChange = function() end, enteringVehicle = function() return false end },
     minigames = {},
 }
 _G.LockFeedback = { localToggle = function() end, remote = function() end }
