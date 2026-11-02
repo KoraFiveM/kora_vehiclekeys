@@ -26,7 +26,8 @@ _G.SetVehicleDoorsLocked = function(_, status) lockedStatus[#lockedStatus + 1] =
 _G.GetGameTimer = function() return now end
 _G.Wait = function() end
 _G.CreateThread = function() end
-_G.SetTimeout = function(_, fn) timeouts[#timeouts + 1] = fn end
+local delays = {}
+_G.SetTimeout = function(ms, fn) delays[#delays + 1] = ms; timeouts[#timeouts + 1] = fn end
 _G.AddEventHandler = function() end
 _G.RegisterNetEvent = function() end
 
@@ -96,6 +97,16 @@ harness.test('allowPickupLockedBikes = true lets anyone lift it', function()
     reset(); Config.allowPickupLockedBikes = true
     BikeGuard.check()
     harness.assertEqual(cleared, 0)
+end)
+
+harness.test('guard tick idles at a slow poll while pickups are allowed', function()
+    Config.allowPickupLockedBikes = false
+    delays = {}; timeouts[#timeouts]()
+    harness.assertEqual(delays[#delays], 150)
+    Config.allowPickupLockedBikes = true
+    timeouts[#timeouts]()
+    harness.assertEqual(delays[#delays], 1000)
+    Config.allowPickupLockedBikes = false
 end)
 
 harness.test('cars and idle players are untouched by the guard', function()

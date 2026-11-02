@@ -92,9 +92,11 @@ function BikeGuard.check()
     end
 end
 
+-- Nothing to guard while pickups are allowed, so idle at a slow poll (still
+-- picks up a live Config change within a second).
 local function bikeGuardTick()
     BikeGuard.check()
-    SetTimeout(150, bikeGuardTick)
+    SetTimeout(Config.allowPickupLockedBikes == true and 1000 or 150, bikeGuardTick)
 end
 bikeGuardTick()
 

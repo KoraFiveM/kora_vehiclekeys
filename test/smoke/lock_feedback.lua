@@ -20,9 +20,6 @@ _G.PlaySoundFromEntity = rec('entitysound')
 _G.SetVehicleLights = rec('lights')
 _G.SetVehicleIndicatorLights = rec('indicators')
 _G.TaskPlayAnim = rec('anim')
-_G.RequestAnimDict = function() end
-_G.RemoveAnimDict = function() end
-_G.HasAnimDictLoaded = function() return true end
 _G.IsPedInAnyVehicle = function() return inVehicle end
 _G.IsEntityDead = function() return false end
 _G.PlayerPedId = function() return 10 end
@@ -58,6 +55,7 @@ _G.Kora = {
     state = { onChange = function() end },
     keybind = { add = function(o) keybinds[#keybinds + 1] = o end },
     cache = { onChange = function() end },
+    stream = { loadAnimDict = function(dict, cb) log[#log + 1] = { 'loadanim', dict }; if cb then cb(dict) end; return dict end },
     minigames = {},
     textui = {
         show = function(text, opts) shown = shown + 1; log[#log + 1] = { 'textui', text, opts.position }; return shown end,
@@ -93,8 +91,14 @@ end)
 harness.test('animation toggle, skipped while in the vehicle', function()
     allOff(); reset(); press(); harness.assertEqual(count('anim'), 0)
     Config.lockFeedback.animation = true; reset(); press(); harness.assertEqual(count('anim'), 1)
+    harness.assertEqual(count('loadanim'), 1, 'dict loaded through Kora.stream')
     inVehicle = true; reset(); press(); harness.assertEqual(count('anim'), 0)
+    harness.assertEqual(count('loadanim'), 0, 'no dict load in the vehicle')
     inVehicle = false
+    local loader = Kora.stream.loadAnimDict
+    Kora.stream.loadAnimDict = function() error('Anim dict does not exist') end
+    reset(); press(); harness.assertEqual(count('anim'), 0, 'missing dict is swallowed')
+    Kora.stream.loadAnimDict = loader
 end)
 
 harness.test('notify toggle', function()
