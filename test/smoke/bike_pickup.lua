@@ -32,12 +32,14 @@ _G.AddEventHandler = function() end
 _G.RegisterNetEvent = function() end
 
 local push, cacheHandlers = {}, {}
+controlRequests = 0
+local stateHandler
 _G.Kora = {
     notify = { send = function(o) notifications[#notifications + 1] = o end },
-    entities = { requestControl = function() return true end },
+    entities = { requestControl = function() controlRequests = controlRequests + 1 return true end },
     callback = { trigger = function() return hasAccess end },
     events = { onPush = function(name, fn) push[name] = fn end, trigger = function() end },
-    state = { onChange = function() end },
+    state = { onChange = function(_, _, fn) stateHandler = fn end },
     keybind = { add = function(o) keybinds[#keybinds + 1] = o end },
     cache = { onChange = function(key, fn) cacheHandlers[key] = fn end, enteringVehicle = function() return false end },
     minigames = {},
@@ -67,6 +69,15 @@ harness.test('a locked bike never gets the native locked-door status', function(
     harness.assertEqual(lockedStatus[2], 2, 'cars are still locked')
     push['qbvehiclekeys:client:lockStateChanged'](7, false)
     harness.assertEqual(lockedStatus[3], 1, 'cars unlock')
+end)
+
+harness.test('replicated lock changes never request network control', function()
+    reset(); isBikeModel = false; controlRequests = 0
+    stateHandler({ entity = 7, value = true })
+    push['qbvehiclekeys:client:lockStateChanged'](7, false)
+    harness.assertEqual(controlRequests, 0, 'observers apply the lock locally')
+    harness.assertEqual(lockedStatus[1], 2)
+    harness.assertEqual(lockedStatus[2], 1)
 end)
 
 harness.test('key holder can lift a locked fallen bike', function()

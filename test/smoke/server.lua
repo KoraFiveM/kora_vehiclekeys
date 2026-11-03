@@ -95,7 +95,9 @@ harness.test('physical keys match normalised plate metadata before toggling', fu
     local locked = callbacks['qbvehiclekeys:server:toggleRequested'](1, 7)
     harness.assertTrue(locked)
     harness.assertTrue(states[vehicle]['qbvehiclekeys:locked'])
-    harness.assertEqual(pushes[#pushes].target, -1)
+    for _, push in ipairs(pushes) do
+        harness.assertTrue(push.name ~= 'qbvehiclekeys:client:lockStateChanged', 'the lock replicates through the state bag only')
+    end
 end)
 
 harness.test('wrong physical metadata cannot unlock a vehicle', function()

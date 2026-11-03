@@ -111,9 +111,10 @@ local function hasVehicleAccess(src, vehicle, plate)
     return hasAccess(src, plate) or hasJobVehicleAccess(src, vehicle)
 end
 
-local function setLocked(vehicle, networkId, locked)
+-- The replicated state bag reaches every client that has the entity (and any
+-- that stream it in later); no broadcast push on top of it (F#50).
+local function setLocked(vehicle, locked)
     Entity(vehicle).state:set('qbvehiclekeys:locked', locked == true, true)
-    Kora.events.push(-1, 'qbvehiclekeys:client:lockStateChanged', networkId, locked == true)
 end
 
 local function lockpickNames()
@@ -212,7 +213,7 @@ Kora.callback.register('qbvehiclekeys:server:toggleRequested', function(src, net
     end
 
     local locked = Entity(vehicle).state['qbvehiclekeys:locked'] ~= true
-    setLocked(vehicle, networkId, locked)
+    setLocked(vehicle, locked)
     local feedback = Config.lockFeedback or {}
     if feedback.lights == true or feedback.soundNearby == true then
         Kora.events.push(-1, 'qbvehiclekeys:client:lockFeedback', networkId, locked, src)
@@ -277,7 +278,7 @@ Kora.events.register('qbvehiclekeys:server:hotwireFinished', function(src, autho
     end
 
     if session.grantKey then giveKeys(src, session.plate, true) end
-    setLocked(vehicle, session.networkId, false)
+    setLocked(vehicle, false)
     Kora.notify.send(src, {
         title = Config.Text.titleHotwire,
         message = session.requireDriver and 'Vehicle hotwired.' or 'You picked the door lock open.',
@@ -474,7 +475,7 @@ legacyEvent('qb-vehiclekeys:server:setVehLockState', function(src, networkId, st
     if not vehicle then return end
     local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
     if not plate or not hasVehicleAccess(src, vehicle, plate) then return end
-    setLocked(vehicle, networkId, state >= 2)
+    setLocked(vehicle, state >= 2)
 end)
 
 -- Stock: hand a copy of a key to a nearby player (receiver is an id or a list

@@ -18,9 +18,13 @@ local function isBike(vehicle)
     return IsThisModelABike(model) or IsThisModelABicycle(model)
 end
 
-local function applyLockState(vehicle, locked)
+-- takeControl is only set for the player who toggled the lock. Everyone else
+-- applies the replicated state locally without asking for network control, so a
+-- lock toggle never makes nearby clients fight over (and migrate) an occupied or
+-- moving vehicle (F#50).
+local function applyLockState(vehicle, locked, takeControl)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    if not Kora.entities.requestControl(vehicle, 250) then return end
+    if takeControl and not Kora.entities.requestControl(vehicle, 250) then return end
     -- Bikes have no doors, but a locked door status also cancels the enter task
     -- that lifts a fallen bike. Their lock is enforced by BikeGuard (below) and
     -- the ignition check instead, so keep the native status unlocked.
@@ -165,7 +169,7 @@ local function toggleNearestVehicle()
     if not networkId then return notify('No nearby networked vehicle.', 'error') end
     local locked, err = Kora.callback.trigger('qbvehiclekeys:server:toggleRequested', networkId)
     if locked == nil then return notify(err or 'Could not change the vehicle lock.', 'error') end
-    applyLockState(vehicle, locked)
+    applyLockState(vehicle, locked, true)
     LockFeedback.localToggle(vehicle, locked)
     if (Config.lockFeedback or {}).notify ~= false then
         notify(locked and 'Vehicle locked.' or 'Vehicle unlocked.', 'success')
@@ -248,6 +252,8 @@ local function hotwireCurrentVehicle()
     end)
 end
 
+-- The server now replicates locks only through the state bag below; this push is
+-- kept for integrations that still send it.
 Kora.events.onPush('qbvehiclekeys:client:lockStateChanged', function(networkId, locked)
     if type(networkId) ~= 'number' or type(locked) ~= 'boolean' then return end
     applyLockState(NetworkGetEntityFromNetworkId(networkId), locked)
