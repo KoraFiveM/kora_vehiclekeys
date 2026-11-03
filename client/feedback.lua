@@ -36,12 +36,11 @@ local function playFobAnimation()
     local ped = PlayerPedId()
     if IsPedInAnyVehicle(ped, false) or IsEntityDead(ped) then return end
     CreateThread(function()
-        RequestAnimDict(FOB_DICT)
-        local deadline = GetGameTimer() + 1000
-        while not HasAnimDictLoaded(FOB_DICT) and GetGameTimer() < deadline do Wait(0) end
-        if not HasAnimDictLoaded(FOB_DICT) then return end
-        TaskPlayAnim(ped, FOB_DICT, FOB_CLIP, 8.0, -8.0, 1000, 48, 0.0, false, false, false)
-        RemoveAnimDict(FOB_DICT)
+        -- kora_lib loads the dict, runs the callback, then releases it. It raises
+        -- when the dict does not exist, which must never bubble out of a toggle.
+        pcall(Kora.stream.loadAnimDict, FOB_DICT, function()
+            TaskPlayAnim(ped, FOB_DICT, FOB_CLIP, 8.0, -8.0, 1000, 48, 0.0, false, false, false)
+        end, { timeout = 1000 })
     end)
 end
 
