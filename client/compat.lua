@@ -1,6 +1,13 @@
+-- A raised callback (timeout, rate limit) counts as "no keys" and never aborts
+-- the caller (F#52).
+local function legacyHasKeys(plate)
+    local ok, result = pcall(Kora.callback.trigger, 'qbvehiclekeys:server:legacyHasKeys', plate)
+    return ok and result == true
+end
+
 Kora.compat.provideExport('qb-vehiclekeys', 'HasKeys', function(plate)
     if type(plate) ~= 'string' or plate == '' or #plate > 32 then return false end
-    return Kora.callback.trigger('qbvehiclekeys:server:legacyHasKeys', plate) == true
+    return legacyHasKeys(plate)
 end)
 
 -- Stock qb-vehiclekeys client events. A client can never grant itself keys:
@@ -34,18 +41,24 @@ end
 local RETRY_INTERVAL, RETRY_ATTEMPTS = 400, 8
 local pending = {}
 
+local function retryGrant(plate)
+    for _ = 1, RETRY_ATTEMPTS do
+        local vehicle = findVehicleByPlate(plate)
+        if vehicle and NetworkGetEntityIsNetworked(vehicle) then
+            TriggerServerEvent('qb-vehiclekeys:server:AcquireVehicleKeys', NetworkGetNetworkIdFromEntity(vehicle))
+        end
+        Wait(RETRY_INTERVAL)
+        if legacyHasKeys(plate) then return end
+    end
+end
+
 local function requestGrant(plate)
     if type(plate) ~= 'string' or plate == '' or #plate > 32 or pending[plate] then return end
     pending[plate] = true
     CreateThread(function()
-        for _ = 1, RETRY_ATTEMPTS do
-            local vehicle = findVehicleByPlate(plate)
-            if vehicle and NetworkGetEntityIsNetworked(vehicle) then
-                TriggerServerEvent('qb-vehiclekeys:server:AcquireVehicleKeys', NetworkGetNetworkIdFromEntity(vehicle))
-            end
-            Wait(RETRY_INTERVAL)
-            if Kora.callback.trigger('qbvehiclekeys:server:legacyHasKeys', plate) == true then break end
-        end
+        -- pcall so pending[plate] is always cleared, even if a native errors.
+        local ok, err = pcall(retryGrant, plate)
+        if not ok then print(('[kora_vehiclekeys] key request for %s failed: %s'):format(plate, tostring(err))) end
         pending[plate] = nil
     end)
 end

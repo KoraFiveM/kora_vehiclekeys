@@ -61,4 +61,19 @@ expect(#sent == 1, 'a new request after giving up starts again'); drain()
 sent = { 1, 2, 3 }
 handlers['qb-vehiclekeys:client:RemoveKeys']('QB 123')
 expect(#sent == 4 and sent[4][1] == 'qb-vehiclekeys:server:RemoveOwnKeys', 'RemoveKeys asks the server to drop own key')
-print('qbvehiclekeys legacy client events: 6 checks passed')
+-- A raised callback (rate limit, timeout) counts as "no key yet" and never leaves the plate stuck.
+local realTrigger = Kora.callback.trigger
+Kora.callback.trigger = function() error('callback rate limited') end
+sent = {}; threads = {}
+handlers['vehiclekeys:client:SetOwner']('QB 123'); drain()
+expect(#sent == 8, 'a raising callback is treated as no key and retried')
+print = (function(real) return function(...) local m = tostring((...)) if not m:find('key request', 1, true) then real(...) end end end)(print)
+function NetworkGetEntityIsNetworked() error('native failed') end
+sent = {}; threads = {}
+handlers['vehiclekeys:client:SetOwner']('QB 123'); drain()
+function NetworkGetEntityIsNetworked() return true end
+Kora.callback.trigger = realTrigger
+sent = {}; handlers['vehiclekeys:client:SetOwner']('QB 123')
+expect(#sent == 1, 'an errored retry loop clears the pending plate')
+drain()
+print('qbvehiclekeys legacy client events: 8 checks passed')
