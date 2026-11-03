@@ -10,6 +10,10 @@ Config.RemoteDistance = 25.0
 Config.InteractionDistance = 5.0
 Config.RequireKeyToStart = true
 Config.AccessCacheMs = 1500
+-- With RequireKeyToStart, the driver's access is checked when they take the
+-- driver seat and again whenever their keys or job change. 0 = no polling while
+-- driving (recommended). Set a number of ms (min 1000) to also re-check on a timer.
+Config.IgnitionRecheckMs = 0
 
 -- Bikes and bicycles have no doors, so a locked bike is never given the native
 -- locked-door status (that blocks lifting a fallen bike). Instead a locked bike

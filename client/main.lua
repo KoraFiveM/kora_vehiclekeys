@@ -264,9 +264,19 @@ Kora.events.onPush('qbvehiclekeys:client:lockFeedback', function(networkId, lock
     LockFeedback.remote(NetworkGetEntityFromNetworkId(networkId), locked, source)
 end)
 
-Kora.events.onPush('qbvehiclekeys:client:keysChanged', function()
+-- Set by the ignition monitor below when Config.RequireKeyToStart is on.
+local recheckIgnition = function() end
+
+-- Keys and job are the only things that change ignition access while seated, so
+-- both drop the cache and re-run the ignition check once (F#51).
+local function accessChanged()
     accessCache = {}
-end)
+    recheckIgnition()
+end
+
+Kora.events.onPush('qbvehiclekeys:client:keysChanged', accessChanged)
+RegisterNetEvent('QBCore:Client:OnJobUpdate')
+AddEventHandler('QBCore:Client:OnJobUpdate', accessChanged)
 
 Kora.events.onPush('qbvehiclekeys:client:lockpickUsed', lockpickFromItem)
 
@@ -309,6 +319,10 @@ end
 if Config.RequireKeyToStart then
     local ignitionMonitorRunning = false
 
+    -- Runs only while it has work: with access it confirms once and stops (or
+    -- keeps a slow recheck when Config.IgnitionRecheckMs > 0); without access it
+    -- holds the engine off every 250 ms. Seat/vehicle changes, key changes and
+    -- job updates start it again.
     local function startIgnitionMonitor()
         if ignitionMonitorRunning then return end
         local ped = PlayerPedId()
@@ -325,12 +339,16 @@ if Config.RequireKeyToStart then
                     SetVehicleEngineOn(vehicle, false, true, true)
                     Wait(250)
                 else
-                    Wait(750)
+                    local recheck = tonumber(Config.IgnitionRecheckMs) or 0
+                    if recheck <= 0 then break end
+                    Wait(math.max(recheck, 1000))
                 end
             end
             ignitionMonitorRunning = false
         end)
     end
+
+    recheckIgnition = startIgnitionMonitor
 
     local function watchIgnition()
         Kora.cache.onChange('vehicle', startIgnitionMonitor)

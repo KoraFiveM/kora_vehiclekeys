@@ -27,6 +27,8 @@ Config.JobVehicles = {
 
 The outer keys are kora_core job names and each list contains vehicle spawn names. The server checks the player's current job and the actual networked vehicle model before allowing ignition or lock controls. This access does not make `exports.kora_vehiclekeys:hasKeys` return true because that export reports plate-key ownership only.
 
+With `Config.RequireKeyToStart`, the driver's access is checked when they take the driver seat and again when their keys or job change (`QBCore:Client:OnJobUpdate`). Nothing polls while a key holder drives. Set `Config.IgnitionRecheckMs` (ms, at least 1000) to also re-check on a timer.
+
 ## Physical metadata keys
 
 Set `Config.PhysicalKey.enabled = true`, add the named item to the shared item registry, and make each key item's `info` match `Config.PhysicalKey.metadata`. The default is:
