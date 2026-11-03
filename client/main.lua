@@ -92,13 +92,46 @@ function BikeGuard.check()
     end
 end
 
--- Nothing to guard while pickups are allowed, so idle at a slow poll (still
--- picks up a live Config change within a second).
-local function bikeGuardTick()
-    BikeGuard.check()
-    SetTimeout(Config.allowPickupLockedBikes == true and 1000 or 150, bikeGuardTick)
+-- Only relevant during an entry attempt: kora_lib's cache 'enteringVehicle'
+-- edge starts the 150 ms guard (first check immediately) when a bike is the
+-- target, and the guard ends once neither the native nor the cache reports an
+-- entry attempt. Keeping it alive while the cache still says "entering" covers
+-- a retry made before the cache sampled the cancelled attempt, which would not
+-- produce a new change event.
+local cachedEntering = false
+local bikeGuardRunning = false
+
+local function startBikeGuard()
+    if bikeGuardRunning then return end
+    bikeGuardRunning = true
+    CreateThread(function()
+        while true do
+            local ok, err = pcall(BikeGuard.check)
+            if not ok then print(('[kora_vehiclekeys] BikeGuard.check errored: %s'):format(tostring(err))) end
+            local trying = GetVehiclePedIsTryingToEnter(PlayerPedId())
+            if not cachedEntering and (not trying or trying == 0) then break end
+            Wait(150)
+        end
+        bikeGuardRunning = false
+    end)
 end
-bikeGuardTick()
+
+local function enteringVehicleChanged(vehicle)
+    cachedEntering = vehicle ~= nil and vehicle ~= false and vehicle ~= 0
+    if cachedEntering and isBike(vehicle) then startBikeGuard() end
+end
+
+-- kora_lib drops onChange listeners when it restarts: re-register and seed from
+-- the current value (onChange never reports it), at load and on every restart.
+local function watchBikeGuard()
+    Kora.cache.onChange('enteringVehicle', enteringVehicleChanged)
+    enteringVehicleChanged(Kora.cache.enteringVehicle())
+end
+
+watchBikeGuard()
+AddEventHandler('onClientResourceStart', function(resource)
+    if resource == 'kora_lib' then watchBikeGuard() end
+end)
 
 -- Models registered through the stock addNoLockVehicles export. Client-local
 -- and advisory: it only stops this client initiating lock toggles for them; the

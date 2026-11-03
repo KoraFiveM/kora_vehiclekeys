@@ -25,13 +25,13 @@ _G.NetworkGetEntityFromNetworkId = function() return bike end
 _G.SetVehicleDoorsLocked = function(_, status) lockedStatus[#lockedStatus + 1] = status end
 _G.GetGameTimer = function() return now end
 _G.Wait = function() end
-_G.CreateThread = function() end
-local delays = {}
-_G.SetTimeout = function(ms, fn) delays[#delays + 1] = ms; timeouts[#timeouts + 1] = fn end
+local threads = {}
+_G.CreateThread = function(fn) threads[#threads + 1] = fn end
+_G.SetTimeout = function(_, fn) timeouts[#timeouts + 1] = fn end
 _G.AddEventHandler = function() end
 _G.RegisterNetEvent = function() end
 
-local push = {}
+local push, cacheHandlers = {}, {}
 _G.Kora = {
     notify = { send = function(o) notifications[#notifications + 1] = o end },
     entities = { requestControl = function() return true end },
@@ -39,7 +39,7 @@ _G.Kora = {
     events = { onPush = function(name, fn) push[name] = fn end, trigger = function() end },
     state = { onChange = function() end },
     keybind = { add = function(o) keybinds[#keybinds + 1] = o end },
-    cache = { onChange = function() end },
+    cache = { onChange = function(key, fn) cacheHandlers[key] = fn end, enteringVehicle = function() return false end },
     minigames = {},
 }
 _G.LockFeedback = { localToggle = function() end, remote = function() end }
@@ -99,16 +99,6 @@ harness.test('allowPickupLockedBikes = true lets anyone lift it', function()
     harness.assertEqual(cleared, 0)
 end)
 
-harness.test('guard tick idles at a slow poll while pickups are allowed', function()
-    Config.allowPickupLockedBikes = false
-    delays = {}; timeouts[#timeouts]()
-    harness.assertEqual(delays[#delays], 150)
-    Config.allowPickupLockedBikes = true
-    timeouts[#timeouts]()
-    harness.assertEqual(delays[#delays], 1000)
-    Config.allowPickupLockedBikes = false
-end)
-
 harness.test('cars and idle players are untouched by the guard', function()
     reset(); isBikeModel = false
     BikeGuard.check()
@@ -119,6 +109,39 @@ harness.test('cars and idle players are untouched by the guard', function()
     reset(); onFoot = false
     BikeGuard.check()
     harness.assertEqual(cleared, 0, 'already in a vehicle')
+end)
+
+harness.test('the guard runs only from an enteringVehicle edge onto a bike, one worker at a time', function()
+    reset()
+    harness.assertEqual(#timeouts, 0, 'no self-rescheduling poll at load')
+    harness.assertEqual(#threads, 0, 'nothing runs while not entering')
+    local entering = cacheHandlers.enteringVehicle
+    harness.assertTrue(entering ~= nil, 'listens to the cache enteringVehicle key')
+    isBikeModel = false
+    entering(bike, false)
+    harness.assertEqual(#threads, 0, 'entering a car starts no guard')
+    entering(false, bike)
+    isBikeModel = true
+    entering(bike, false)
+    harness.assertEqual(#threads, 1, 'entering a bike starts the guard')
+    entering(bike + 1, bike)
+    harness.assertEqual(#threads, 1, 'a running guard is never duplicated')
+    local waits = 0
+    local savedWait = _G.Wait
+    _G.Wait = function(ms)
+        waits = waits + 1
+        harness.assertEqual(ms, 150, 'guard keeps the 150 ms cadence')
+        -- The cancelled attempt is sampled by the cache: the guard can stop.
+        enterTarget = 0
+        entering(false, bike)
+    end
+    threads[1]()
+    _G.Wait = savedWait
+    harness.assertEqual(cleared, 1, 'first check runs immediately and blocks the locked bike')
+    harness.assertEqual(waits, 1, 'the guard exits once no entry attempt remains')
+    enterTarget = bike
+    entering(bike, false)
+    harness.assertEqual(#threads, 2, 'a later attempt starts a fresh guard')
 end)
 
 harness.report('qbvehiclekeys bike pickup')

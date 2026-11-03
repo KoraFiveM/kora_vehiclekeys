@@ -54,7 +54,7 @@ _G.Kora = {
     events = { onPush = function(name, fn) pushHandlers[name] = fn end, trigger = function() end },
     state = { onChange = function() end },
     keybind = { add = function(o) keybinds[#keybinds + 1] = o end },
-    cache = { onChange = function() end },
+    cache = { onChange = function() end, enteringVehicle = function() return false end },
     stream = { loadAnimDict = function(dict, cb) log[#log + 1] = { 'loadanim', dict }; if cb then cb(dict) end; return dict end },
     minigames = {},
     textui = {
