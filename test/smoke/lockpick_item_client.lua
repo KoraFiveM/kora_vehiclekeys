@@ -87,4 +87,25 @@ harness.test('stock lockpicks:UseLockpick event is handled', function()
     harness.assertTrue(netHandlers['lockpicks:UseLockpick'] ~= nil)
 end)
 
+harness.test('a raised callback or minigame error never leaves the lockpick busy', function()
+    nearby, hasKeys, notifications, triggers, inCar = 70, false, {}, {}, false
+    local realTrigger, realPlay = Kora.callback.trigger, Kora.minigames.play
+    Kora.callback.trigger = function(name)
+        triggers[#triggers + 1] = name
+        if name == 'qbvehiclekeys:server:lockpickStarted' then error('rate limited') end
+    end
+    pushHandlers['qbvehiclekeys:client:lockpickUsed']()
+    harness.assertEqual(notifications[#notifications].message, Config.Text.hotwireFailed)
+    Kora.callback.trigger = function(name) triggers[#triggers + 1] = name return 'auth' end
+    Kora.minigames.play = function() error('minigame failed') end
+    triggers = {}
+    pushHandlers['qbvehiclekeys:client:lockpickUsed']()
+    harness.assertEqual(triggers[#triggers], 'qbvehiclekeys:server:hotwireFinished', 'a failed minigame still closes the session')
+    Kora.minigames.play = realPlay
+    triggers = {}
+    pushHandlers['qbvehiclekeys:client:lockpickUsed']()
+    harness.assertEqual(triggers[1], 'qbvehiclekeys:server:lockpickStarted', 'still usable afterwards')
+    Kora.callback.trigger = realTrigger
+end)
+
 harness.report('vehiclekeys lockpick item client')
