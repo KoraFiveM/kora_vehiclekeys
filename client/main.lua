@@ -53,9 +53,34 @@ end
 -- times out or is rate limited raises inside kora_lib, so it is caught here:
 -- the busy flag must always be released and the player only sees the generic
 -- Config.Text.hotwireFailed. The technical detail goes to the debug log.
+--
+-- Spamming the lockpick item / hotwire key is refused here, before the server,
+-- by mirroring the server's per-callback Config.RateLimits.hotwire window. If a
+-- rate-limit rejection still gets through (latency), further requests wait out
+-- the server's "retry in" time instead of hitting the limiter again.
+local hotwireRequests, hotwireBlockedUntil = {}, 0
+
+local function hotwireRequestAllowed(callbackName)
+    local now = GetGameTimer()
+    if now < hotwireBlockedUntil then return false end
+    local limit = (Config.RateLimits or {}).hotwire
+    if type(limit) ~= 'table' or type(limit.max) ~= 'number' or type(limit.window) ~= 'number' then return true end
+    local kept = {}
+    for _, sentAt in ipairs(hotwireRequests[callbackName] or {}) do
+        if now - sentAt < limit.window + 250 then kept[#kept + 1] = sentAt end
+    end
+    hotwireRequests[callbackName] = kept
+    if #kept >= limit.max then return false end
+    kept[#kept + 1] = now
+    return true
+end
+
 local function requestHotwireSession(callbackName, networkId)
+    if not hotwireRequestAllowed(callbackName) then return nil, 'Slow down before trying that again.' end
     local ok, authorization, err = pcall(Kora.callback.trigger, callbackName, networkId)
     if not ok then
+        local retryMs = tonumber(tostring(authorization):match('retry in (%d+)ms'))
+        if retryMs then hotwireBlockedUntil = GetGameTimer() + retryMs end
         if Config.Hotwire.debug == true then
             print(("[kora_vehiclekeys] %s: no response from the server (%s)"):format(callbackName, tostring(authorization)))
         end
@@ -190,7 +215,7 @@ local function lockpickFromItem()
             busyHotwiring = false
             return notify(Config.Text.lockpickNotNeeded, 'info', Config.Text.titleHotwire)
         end
-        local authorization, err = Kora.callback.trigger(
+        local authorization, err = requestHotwireSession(
             inVehicle and 'qbvehiclekeys:server:hotwireStarted' or 'qbvehiclekeys:server:lockpickStarted', networkId)
         if not authorization then
             busyHotwiring = false
