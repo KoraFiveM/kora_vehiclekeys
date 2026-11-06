@@ -273,6 +273,9 @@ Kora.events.register('qbvehiclekeys:server:hotwireFinished', function(src, autho
         and Kora.minigames.consumeProof(src, proof, 'lockpick', authorization) == true
     maybeBreakLockpick(src, session, successful)
     if not successful then
+        if not session.requireDriver and Config.Lockpick.lockpickFailureText == true then
+            return Kora.notify.send(src, { title = Config.Text.titleLockpickFailed, message = Config.Text.lockpickFailed, type = 'error' })
+        end
         return Kora.notify.send(src, { title = Config.Text.titleHotwireFailed, message = 'The ignition resisted your lockpick.', type = 'error' })
     end
 

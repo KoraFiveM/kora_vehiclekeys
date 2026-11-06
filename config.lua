@@ -80,6 +80,9 @@ Config.Lockpick = {
     -- other inventory providers route "Use" to the lockpick flow). Set false if
     -- another resource already registers them.
     registerUsable = true,
+    -- Failures of the on-foot lockpick (not the driver-seat hotwire) show the
+    -- "Lockpicking Failed" wording from Config.Text instead of the hotwire text.
+    lockpickFailureText = true,
     breakChance = { success = 5, failure = 25 },
     difficulty = {
         attempts = 2,
@@ -127,6 +130,10 @@ Config.Text = {
     titleKeys = 'Vehicle Keys',
     titleHotwire = 'Hotwire',
     titleHotwireFailed = 'Hotwire Failed',
+    -- Shown instead of the hotwire failure texts when an on-foot lockpick fails
+    -- (see Config.Lockpick.lockpickFailureText).
+    titleLockpickFailed = 'Lockpicking Failed',
+    lockpickFailed = 'You failed to pick the lock.',
     -- Using a lockpick item with no vehicle in reach / when no pick is needed.
     lockpickNoVehicle = 'There is no vehicle close enough to lockpick.',
     lockpickNotNeeded = 'You do not need a lockpick for this vehicle.',

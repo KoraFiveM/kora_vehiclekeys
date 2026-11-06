@@ -202,7 +202,10 @@ local function lockpickFromItem()
     if busyHotwiring then return end
     local vehicle = currentOrClosestVehicle(Config.InteractionDistance)
     local networkId = vehicle and vehicleNetworkId(vehicle)
-    if not networkId then return notify(Config.Text.lockpickNoVehicle, 'error', Config.Text.titleHotwireFailed) end
+    local ownText = (Config.Lockpick or {}).lockpickFailureText == true
+    if not networkId then
+        return notify(Config.Text.lockpickNoVehicle, 'error', ownText and Config.Text.titleLockpickFailed or Config.Text.titleHotwireFailed)
+    end
     local ped = PlayerPedId()
     local inVehicle = GetVehiclePedIsIn(ped, false) == vehicle
     if inVehicle and GetPedInVehicleSeat(vehicle, -1) ~= ped then
@@ -219,6 +222,9 @@ local function lockpickFromItem()
             inVehicle and 'qbvehiclekeys:server:hotwireStarted' or 'qbvehiclekeys:server:lockpickStarted', networkId)
         if not authorization then
             busyHotwiring = false
+            if ownText and not inVehicle then
+                return notify(err or Config.Text.lockpickFailed, 'error', Config.Text.titleLockpickFailed)
+            end
             return notify(err or Config.Text.hotwireFailed, 'error', Config.Text.titleHotwireFailed)
         end
         local result = Kora.minigames.play('lockpick', nil, authorization)
