@@ -100,16 +100,36 @@ local lastBikeNotice = 0
 -- every tick, so it applies live.
 BikeGuard = {}
 
+local lastBikeTarget, lastBikeTargetAt = 0, 0
+
+-- Pushes a ped that already got onto a locked bike back off it. True if it was seated.
+local function ejectFromBike(ped, vehicle)
+    if not IsPedInAnyVehicle(ped, false) or GetVehiclePedIsIn(ped, false) ~= vehicle then return false end
+    TaskLeaveVehicle(ped, vehicle, 16)
+    return true
+end
+
 function BikeGuard.check()
     if Config.allowPickupLockedBikes == true then return end
     local ped = PlayerPedId()
-    if IsPedInAnyVehicle(ped, false) then return end
-    local vehicle = GetVehiclePedIsTryingToEnter(ped)
+    local vehicle, seated = nil, false
+    if IsPedInAnyVehicle(ped, false) then
+        seated = true
+        -- The mount can finish before the guard samples it (a bike is mounted in
+        -- an instant): treat a bike we just saw being entered as still pending.
+        vehicle = GetVehiclePedIsIn(ped, false)
+        if not vehicle or vehicle == 0 or vehicle ~= lastBikeTarget or GetGameTimer() - lastBikeTargetAt > 3000 then return end
+    else
+        vehicle = GetVehiclePedIsTryingToEnter(ped)
+    end
     if not vehicle or vehicle == 0 or not isBike(vehicle) then return end
     if Entity(vehicle).state['qbvehiclekeys:locked'] ~= true then return end
+    if not seated then lastBikeTarget, lastBikeTargetAt = vehicle, GetGameTimer() end
+    -- The access check is a server round trip: the ped may be seated by the time
+    -- it answers, and ClearPedTasks does nothing to a seated ped.
     if hasIgnitionAccess(vehicle) then return end
 
-    ClearPedTasks(ped)
+    if not ejectFromBike(ped, vehicle) then ClearPedTasks(ped) end
     local now = GetGameTimer()
     if now - lastBikeNotice >= 2000 then
         lastBikeNotice = now
@@ -204,6 +224,11 @@ local function lockpickFromItem()
     local networkId = vehicle and vehicleNetworkId(vehicle)
     local ownText = (Config.Lockpick or {}).lockpickFailureText == true
     if not networkId then
+        -- On foot with no vehicle in reach: hand the pick to a nearby lockpickable door.
+        if (Config.Lockpick or {}).doorFallback ~= false and GetResourceState('kora_doorlock') == 'started' then
+            local ok, started = pcall(function() return exports.kora_doorlock:pickClosestDoor() end)
+            if ok and started then return end
+        end
         return notify(Config.Text.lockpickNoVehicle, 'error', ownText and Config.Text.titleLockpickFailed or Config.Text.titleHotwireFailed)
     end
     local ped = PlayerPedId()

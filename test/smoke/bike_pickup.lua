@@ -11,7 +11,9 @@ local bike = 70
 
 _G.PlayerPedId = function() return 10 end
 _G.IsPedInAnyVehicle = function() return not onFoot end
-_G.GetVehiclePedIsIn = function() return 0 end
+local seatedIn, left, onAccessCheck = 0, 0, nil
+_G.GetVehiclePedIsIn = function() return seatedIn end
+_G.TaskLeaveVehicle = function() left = left + 1 end
 _G.GetVehiclePedIsTryingToEnter = function() return enterTarget end
 _G.ClearPedTasks = function() cleared = cleared + 1 end
 _G.GetEntityModel = function() return 1 end
@@ -35,7 +37,7 @@ local push, cacheHandlers = {}, {}
 _G.Kora = {
     notify = { send = function(o) notifications[#notifications + 1] = o end },
     entities = { requestControl = function() return true end },
-    callback = { trigger = function() return hasAccess end },
+    callback = { trigger = function() if onAccessCheck then onAccessCheck() end return hasAccess end },
     events = { onPush = function(name, fn) push[name] = fn end, trigger = function() end },
     state = { onChange = function() end },
     keybind = { add = function(o) keybinds[#keybinds + 1] = o end },
@@ -51,6 +53,7 @@ local function reset()
     lockedStatus, cleared, notifications = {}, 0, {}
     onFoot, enterTarget, isBikeModel, stateLocked, hasAccess = true, bike, true, true, false
     Config.allowPickupLockedBikes = false
+    seatedIn, left, onAccessCheck = 0, 0, nil
     now = now + 10000 -- also expires the access cache and notice throttle
 end
 
@@ -91,6 +94,19 @@ harness.test('no key + locked: blocked with a visible notice, throttled', functi
     BikeGuard.check()
     harness.assertEqual(cleared, 2, 'still blocked')
     harness.assertEqual(#notifications, 1, 'notice throttled')
+end)
+
+harness.test('a ped seated on a locked bike while the access check runs is removed', function()
+    reset()
+    onAccessCheck = function() onFoot = false; seatedIn = bike end
+    BikeGuard.check()
+    harness.assertEqual(left, 1, 'ped is made to leave the bike')
+    harness.assertEqual(cleared, 0, 'leave task is not cancelled')
+    harness.assertEqual(notifications[1].message, 'This bike is locked.')
+    reset(); hasAccess = true
+    onAccessCheck = function() onFoot = false; seatedIn = bike end
+    BikeGuard.check()
+    harness.assertEqual(left, 0, 'key holder stays on the bike')
 end)
 
 harness.test('allowPickupLockedBikes = true lets anyone lift it', function()

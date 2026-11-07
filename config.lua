@@ -83,6 +83,8 @@ Config.Lockpick = {
     -- Failures of the on-foot lockpick (not the driver-seat hotwire) show the
     -- "Lockpicking Failed" wording from Config.Text instead of the hotwire text.
     lockpickFailureText = true,
+    -- With no vehicle in reach, using a lockpick next to a lockpickable door (kora_doorlock) picks that door instead of showing the vehicle error.
+    doorFallback = true,
     breakChance = { success = 5, failure = 25 },
     difficulty = {
         attempts = 2,
