@@ -253,18 +253,18 @@ harness.test('lockpick items are registered once, by the shared loop, and push t
     harness.assertEqual(Config.LockpickItems, nil)
     pushes = {}
     useables.lockpick(1, {}); useables.advancedlockpick(1, {})
-    harness.assertEqual(pushes[1].name, 'qbvehiclekeys:client:lockpickUsed')
-    harness.assertEqual(pushes[2].name, 'qbvehiclekeys:client:lockpickUsed')
+    harness.assertEqual(pushes[1].name, 'kora_vehiclekeys:client:lockpickUsed')
+    harness.assertEqual(pushes[2].name, 'kora_vehiclekeys:client:lockpickUsed')
 end)
 
-local start = callbacks['qbvehiclekeys:server:lockpickStarted']
-local startHotwire = callbacks['qbvehiclekeys:server:hotwireStarted']
-local finish = events['qbvehiclekeys:server:hotwireFinished']
+local start = callbacks['kora_vehiclekeys:server:lockpickStarted']
+local startHotwire = callbacks['kora_vehiclekeys:server:hotwireStarted']
+local finish = events['kora_vehiclekeys:server:hotwireFinished']
 harness.test('lockpickStarted validates item, keys, distance and lock state', function()
     seatPed = 0
     states[vehicle] = {}
     harness.assertEqual((start(1, 7)), nil, 'not locked')
-    states[vehicle] = { ['qbvehiclekeys:locked'] = true }
+    states[vehicle] = { ['kora_vehiclekeys:locked'] = true }
     heldPick = nil
     harness.assertEqual((start(1, 7)), nil, 'no lockpick item')
     heldPick = 'advancedlockpick'
@@ -282,24 +282,24 @@ end)
 
 harness.test('a successful lockpick from outside unlocks without granting a key', function()
     seatPed = 0
-    states[vehicle] = { ['qbvehiclekeys:locked'] = true }
+    states[vehicle] = { ['kora_vehiclekeys:locked'] = true }
     start(1, 7)
     _G.source = 1
     finish(1, 'authorisation', 'proof')
-    harness.assertEqual(states[vehicle]['qbvehiclekeys:locked'], false)
+    harness.assertEqual(states[vehicle]['kora_vehiclekeys:locked'], false)
     harness.assertFalse(export('HasKeys')(1, 'QB 123'))
 end)
 
 harness.test('hotwire from the driver seat grants a session key; failure changes nothing', function()
     seatPed = playerPed
-    states[vehicle] = { ['qbvehiclekeys:locked'] = true }
+    states[vehicle] = { ['kora_vehiclekeys:locked'] = true }
     startHotwire(1, 7)
     finish(1, 'authorisation', 'bad')
-    harness.assertEqual(states[vehicle]['qbvehiclekeys:locked'], true)
+    harness.assertEqual(states[vehicle]['kora_vehiclekeys:locked'], true)
     harness.assertFalse(export('HasKeys')(1, 'QB 123'))
     startHotwire(1, 7)
     finish(1, 'authorisation', 'proof')
-    harness.assertEqual(states[vehicle]['qbvehiclekeys:locked'], false)
+    harness.assertEqual(states[vehicle]['kora_vehiclekeys:locked'], false)
     harness.assertTrue(export('HasKeys')(1, 'QB 123'))
     export('RemoveKeys')(1, 'QB 123')
     startHotwire(1, 7)
@@ -314,7 +314,7 @@ harness.test('the broken pick is the session item and slot', function()
     exports.kora_core.removeItem = function(_, _, name, _, slot) removedItems[#removedItems + 1] = { name, slot } return true end
     math.random = function() return 1 end
     seatPed = 0
-    states[vehicle] = { ['qbvehiclekeys:locked'] = true }
+    states[vehicle] = { ['kora_vehiclekeys:locked'] = true }
     start(1, 7)
     finish(1, 'authorisation', 'bad')
     harness.assertEqual(removedItems[1][1], 'lockpick')
@@ -322,4 +322,4 @@ harness.test('the broken pick is the session item and slot', function()
     exports.kora_core.removeItem = original
 end)
 
-harness.report('qbvehiclekeys stock parity server')
+harness.report('kora_vehiclekeys stock parity server')

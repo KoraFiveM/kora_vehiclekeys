@@ -78,7 +78,7 @@ Feature: kora_vehiclekeys — Vehicles
   @kora_vehiclekeys @checklist @checklist:kora_vehiclekeys:legacy-lockpick-event @cat:vehicles
   Scenario: Stock lockpick event compatibility
     """
-    Checklist test: Items lockpick/advancedlockpick use flows via qbvehiclekeys:client:lockpickUsed / lockpicks:UseLockpick (other resources).
+    Checklist test: Items lockpick/advancedlockpick use flows via kora_vehiclekeys:client:lockpickUsed / lockpicks:UseLockpick (other resources).
     """
     Given I have 1 "lockpick"
     And I have 1 "advancedlockpick"

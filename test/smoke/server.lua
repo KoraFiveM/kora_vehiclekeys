@@ -92,15 +92,15 @@ Config.JobVehicles = { police = { 'police' } }
 dofile(resourceDir .. 'server/main.lua')
 
 harness.test('physical keys match normalised plate metadata before toggling', function()
-    local locked = callbacks['qbvehiclekeys:server:toggleRequested'](1, 7)
+    local locked = callbacks['kora_vehiclekeys:server:toggleRequested'](1, 7)
     harness.assertTrue(locked)
-    harness.assertTrue(states[vehicle]['qbvehiclekeys:locked'])
+    harness.assertTrue(states[vehicle]['kora_vehiclekeys:locked'])
     harness.assertEqual(pushes[#pushes].target, -1)
 end)
 
 harness.test('wrong physical metadata cannot unlock a vehicle', function()
     inventory[1].info.keyType = 'valet'
-    local locked, reason = callbacks['qbvehiclekeys:server:toggleRequested'](1, 7)
+    local locked, reason = callbacks['kora_vehiclekeys:server:toggleRequested'](1, 7)
     harness.assertEqual(locked, nil)
     harness.assertEqual(reason, 'You do not have the keys for this vehicle.')
     inventory[1].info.keyType = 'standard'
@@ -111,21 +111,21 @@ harness.test('configured jobs can use configured vehicle models without keys', f
     playerJob = { name = 'police' }
     vehicleModel = 200
 
-    harness.assertTrue(callbacks['qbvehiclekeys:server:accessRequested'](1, 7))
-    local locked = callbacks['qbvehiclekeys:server:toggleRequested'](1, 7)
+    harness.assertTrue(callbacks['kora_vehiclekeys:server:accessRequested'](1, 7))
+    local locked = callbacks['kora_vehiclekeys:server:toggleRequested'](1, 7)
     harness.assertEqual(locked, false)
 
     playerJob = { name = 'unemployed' }
-    harness.assertFalse(callbacks['qbvehiclekeys:server:accessRequested'](1, 7))
+    harness.assertFalse(callbacks['kora_vehiclekeys:server:accessRequested'](1, 7))
 end)
 
 harness.test('a validated hotwire proof grants ignition access even in item-only mode', function()
     inventory = {}
     vehicleModel = 100
-    local authorization = callbacks['qbvehiclekeys:server:hotwireStarted'](1, 7)
+    local authorization = callbacks['kora_vehiclekeys:server:hotwireStarted'](1, 7)
     harness.assertEqual(authorization, 'authorisation')
-    events['qbvehiclekeys:server:hotwireFinished'](1, authorization, 'proof')
-    harness.assertTrue(callbacks['qbvehiclekeys:server:accessRequested'](1, 7))
+    events['kora_vehiclekeys:server:hotwireFinished'](1, authorization, 'proof')
+    harness.assertTrue(callbacks['kora_vehiclekeys:server:accessRequested'](1, 7))
 end)
 
 harness.test('legacy HasKeys reads actual server keys and rejects invalid subjects', function()
@@ -135,19 +135,19 @@ harness.test('legacy HasKeys reads actual server keys and rejects invalid subjec
     harness.assertFalse(legacy(2, 'QB 123'), 'cannot borrow another players temporary key')
     harness.assertFalse(legacy(nil, 'QB 123'))
     harness.assertFalse(legacy(1, {}))
-    harness.assertTrue(callbacks['qbvehiclekeys:server:legacyHasKeys'](1, 'QB 123'))
-    harness.assertFalse(callbacks['qbvehiclekeys:server:legacyHasKeys'](2, 'QB 123'))
+    harness.assertTrue(callbacks['kora_vehiclekeys:server:legacyHasKeys'](1, 'QB 123'))
+    harness.assertFalse(callbacks['kora_vehiclekeys:server:legacyHasKeys'](2, 'QB 123'))
 end)
 
 harness.test('lock feedback broadcast follows lights/soundNearby and skips failed toggles', function()
     local function feedbackPushes()
         local n = 0
-        for _, push in ipairs(pushes) do if push.name == 'qbvehiclekeys:client:lockFeedback' then n = n + 1 end end
+        for _, push in ipairs(pushes) do if push.name == 'kora_vehiclekeys:client:lockFeedback' then n = n + 1 end end
         return n
     end
     Config.lockFeedback = { lights = true, soundNearby = false }
     local before = feedbackPushes()
-    local locked = callbacks['qbvehiclekeys:server:toggleRequested'](1, 7)
+    local locked = callbacks['kora_vehiclekeys:server:toggleRequested'](1, 7)
     harness.assertEqual(feedbackPushes(), before + 1)
     local push = pushes[#pushes]
     harness.assertEqual(push.values[1], 7)
@@ -155,17 +155,17 @@ harness.test('lock feedback broadcast follows lights/soundNearby and skips faile
     harness.assertEqual(push.values[3], 1)
 
     Config.lockFeedback = { lights = false, soundNearby = true }
-    callbacks['qbvehiclekeys:server:toggleRequested'](1, 7)
+    callbacks['kora_vehiclekeys:server:toggleRequested'](1, 7)
     harness.assertEqual(feedbackPushes(), before + 2)
 
     Config.lockFeedback = { lights = false, soundNearby = false }
-    callbacks['qbvehiclekeys:server:toggleRequested'](1, 7)
+    callbacks['kora_vehiclekeys:server:toggleRequested'](1, 7)
     harness.assertEqual(feedbackPushes(), before + 2, 'no broadcast when both disabled')
 
     Config.lockFeedback = { lights = true, soundNearby = true }
-    local failed = callbacks['qbvehiclekeys:server:toggleRequested'](2, 7)
+    local failed = callbacks['kora_vehiclekeys:server:toggleRequested'](2, 7)
     harness.assertEqual(failed, nil)
     harness.assertEqual(feedbackPushes(), before + 2, 'no broadcast on failed toggle')
 end)
 
-harness.report('qbvehiclekeys server')
+harness.report('kora_vehiclekeys server')

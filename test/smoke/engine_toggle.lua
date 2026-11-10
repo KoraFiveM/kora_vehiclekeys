@@ -65,4 +65,4 @@ harness.test('no keys, passenger or on foot: nothing happens', function()
     driving = true
 end)
 
-harness.report('qbvehiclekeys engine toggle')
+harness.report('kora_vehiclekeys engine toggle')

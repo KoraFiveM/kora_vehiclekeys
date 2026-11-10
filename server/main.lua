@@ -112,8 +112,8 @@ local function hasVehicleAccess(src, vehicle, plate)
 end
 
 local function setLocked(vehicle, networkId, locked)
-    Entity(vehicle).state:set('qbvehiclekeys:locked', locked == true, true)
-    Kora.events.push(-1, 'qbvehiclekeys:client:lockStateChanged', networkId, locked == true)
+    Entity(vehicle).state:set('kora_vehiclekeys:locked', locked == true, true)
+    Kora.events.push(-1, 'kora_vehiclekeys:client:lockStateChanged', networkId, locked == true)
 end
 
 local function lockpickNames()
@@ -147,7 +147,7 @@ local function giveKeys(src, plate, allowWhenDisabled)
     plate = normalisePlate(plate)
     if not plate or (not Config.AllowTemporaryKeys and not allowWhenDisabled) then return false end
     playerKeys(src)[plate] = allowWhenDisabled and 'hotwired' or true
-    Kora.events.push(src, 'qbvehiclekeys:client:keysChanged', plate, true)
+    Kora.events.push(src, 'kora_vehiclekeys:client:keysChanged', plate, true)
     return true
 end
 
@@ -158,7 +158,7 @@ local function removeKeys(src, plate)
     plate = normalisePlate(plate)
     if not plate or not temporaryKeys[src] then return false end
     temporaryKeys[src][plate] = nil
-    Kora.events.push(src, 'qbvehiclekeys:client:keysChanged', plate, false)
+    Kora.events.push(src, 'kora_vehiclekeys:client:keysChanged', plate, false)
     return true
 end
 
@@ -175,13 +175,13 @@ Kora.compat.provideExport('qb-vehiclekeys', 'HasKeys', function(src, plate)
 end)
 
 -- Read only: clients can query only their own physical/temporary keys.
-Kora.callback.register('qbvehiclekeys:server:legacyHasKeys', function(src, plate)
+Kora.callback.register('kora_vehiclekeys:server:legacyHasKeys', function(src, plate)
     return hasKeys(src, plate)
 end, { rateLimit = Config.RateLimits.access })
 
 if Config.PhysicalKey.enabled then
     exports.kora_core:createUseable(Config.PhysicalKey.item, function(src, item)
-        Kora.events.push(src, 'qbvehiclekeys:client:physicalKeyUsed', item.info or {})
+        Kora.events.push(src, 'kora_vehiclekeys:client:physicalKeyUsed', item.info or {})
     end)
 end
 
@@ -191,19 +191,19 @@ end
 if Config.Lockpick.registerUsable ~= false then
     for _, name in ipairs(lockpickNames()) do
         exports.kora_core:createUseable(name, function(src)
-            Kora.events.push(src, 'qbvehiclekeys:client:lockpickUsed')
+            Kora.events.push(src, 'kora_vehiclekeys:client:lockpickUsed')
         end)
     end
 end
 
-Kora.callback.register('qbvehiclekeys:server:accessRequested', function(src, networkId)
+Kora.callback.register('kora_vehiclekeys:server:accessRequested', function(src, networkId)
     local vehicle = validateVehicle(src, networkId, Config.InteractionDistance, true)
     if not vehicle then return false end
     local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
     return plate ~= nil and hasVehicleAccess(src, vehicle, plate)
 end, { rateLimit = Config.RateLimits.access })
 
-Kora.callback.register('qbvehiclekeys:server:toggleRequested', function(src, networkId)
+Kora.callback.register('kora_vehiclekeys:server:toggleRequested', function(src, networkId)
     local vehicle, vehicleErr = validateVehicle(src, networkId, Config.RemoteDistance, false)
     if not vehicle then return nil, vehicleErr end
     local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
@@ -211,16 +211,16 @@ Kora.callback.register('qbvehiclekeys:server:toggleRequested', function(src, net
         return nil, 'You do not have the keys for this vehicle.'
     end
 
-    local locked = Entity(vehicle).state['qbvehiclekeys:locked'] ~= true
+    local locked = Entity(vehicle).state['kora_vehiclekeys:locked'] ~= true
     setLocked(vehicle, networkId, locked)
     local feedback = Config.lockFeedback or {}
     if feedback.lights == true or feedback.soundNearby == true then
-        Kora.events.push(-1, 'qbvehiclekeys:client:lockFeedback', networkId, locked, src)
+        Kora.events.push(-1, 'kora_vehiclekeys:client:lockFeedback', networkId, locked, src)
     end
     return locked
 end, { rateLimit = Config.RateLimits.toggle })
 
-Kora.callback.register('qbvehiclekeys:server:hotwireStarted', function(src, networkId)
+Kora.callback.register('kora_vehiclekeys:server:hotwireStarted', function(src, networkId)
     if not Config.Hotwire.enabled then return nil, 'Hotwiring is disabled.' end
     local vehicle, vehicleErr = validateVehicle(src, networkId, Config.InteractionDistance, true)
     if not vehicle then return nil, vehicleErr end
@@ -240,14 +240,14 @@ Kora.callback.register('qbvehiclekeys:server:hotwireStarted', function(src, netw
     return authorization
 end, { rateLimit = Config.RateLimits.hotwire })
 
-Kora.callback.register('qbvehiclekeys:server:lockpickStarted', function(src, networkId)
+Kora.callback.register('kora_vehiclekeys:server:lockpickStarted', function(src, networkId)
     if not Config.Hotwire.enabled then return nil, 'Lockpicking is disabled.' end
     local vehicle, vehicleErr = validateVehicle(src, networkId, Config.InteractionDistance, false)
     if not vehicle then return nil, vehicleErr end
     local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
     if not plate then return nil, 'Vehicle has no usable plate.' end
     if hasVehicleAccess(src, vehicle, plate) then return nil, 'You already have the keys.' end
-    local locked = Entity(vehicle).state['qbvehiclekeys:locked'] == true or (GetVehicleDoorLockStatus(vehicle) or 0) > 1
+    local locked = Entity(vehicle).state['kora_vehiclekeys:locked'] == true or (GetVehicleDoorLockStatus(vehicle) or 0) > 1
     if not locked then return nil, 'This vehicle is not locked.' end
 
     local slot, itemName = lockpickItem(src)
@@ -262,7 +262,7 @@ Kora.callback.register('qbvehiclekeys:server:lockpickStarted', function(src, net
     return authorization
 end, { rateLimit = Config.RateLimits.hotwire })
 
-Kora.events.register('qbvehiclekeys:server:hotwireFinished', function(src, authorization, proof)
+Kora.events.register('kora_vehiclekeys:server:hotwireFinished', function(src, authorization, proof)
     local session = hotwireSessions[src]
     hotwireSessions[src] = nil
     if not session or type(authorization) ~= 'string' or session.authorization ~= authorization then return end
@@ -411,7 +411,7 @@ end
 local function trustedBasis(src, vehicle, plate)
     local cfg = Config.TrustedSetOwner
     if isOwnedVehicle(vehicle, plate) then return nil end
-    if Entity(vehicle).state['qbvehiclekeys:locked'] == true then return nil end
+    if Entity(vehicle).state['kora_vehiclekeys:locked'] == true then return nil end
     if (GetVehicleDoorLockStatus(vehicle) or 0) > 1 then return nil end
     if heldByAnother(src, plate) or plateContested(vehicle, plate) then return nil end
 

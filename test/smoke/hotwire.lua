@@ -38,8 +38,8 @@ local api = {
         if hotwireMode == "raise" then error("Callback timed out.") end
         if hotwireMode == "silent" then return nil end
         if hotwireMode == "reason" then return nil, "You need a lockpick." end
-        if name == 'qbvehiclekeys:server:accessRequested' then return hasKeys end
-        if name == 'qbvehiclekeys:server:hotwireStarted' then return 'auth' end
+        if name == 'kora_vehiclekeys:server:accessRequested' then return hasKeys end
+        if name == 'kora_vehiclekeys:server:hotwireStarted' then return 'auth' end
     end },
     events = { onPush = function() end, trigger = function(name) triggers[#triggers + 1] = name end },
     state = { onChange = function() end },
@@ -48,7 +48,7 @@ local api = {
     minigames = { play = function() return { proof = 'p' } end },
     textui = { show = function() return 1 end, hide = function() end },
 }
-_G.Kora, _G.QB = api, api
+_G.Kora, _G.Kora = api, api
 
 dofile(resourceDir .. 'config.lua')
 Config.RequireKeyToStart = false -- ignition monitor is not under test
@@ -61,7 +61,7 @@ local function press()
     hotwireKey().onPressed()
 end
 local function started()
-    for _, t in ipairs(triggers) do if t == 'qbvehiclekeys:server:hotwireStarted' then return true end end
+    for _, t in ipairs(triggers) do if t == 'kora_vehiclekeys:server:hotwireStarted' then return true end end
     return false
 end
 local function reset() inVehicle, isDriver, engineOn, networked, hasKeys = true, true, false, true, false end
@@ -117,4 +117,4 @@ harness.test("a specific server reason is still shown", function()
     harness.assertEqual(notifications[1].message, "You need a lockpick.")
 end)
 
-harness.report('qbvehiclekeys hotwire key')
+harness.report('kora_vehiclekeys hotwire key')

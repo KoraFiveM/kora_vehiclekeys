@@ -1,6 +1,6 @@
 Kora.compat.provideExport('qb-vehiclekeys', 'HasKeys', function(plate)
     if type(plate) ~= 'string' or plate == '' or #plate > 32 then return false end
-    return Kora.callback.trigger('qbvehiclekeys:server:legacyHasKeys', plate) == true
+    return Kora.callback.trigger('kora_vehiclekeys:server:legacyHasKeys', plate) == true
 end)
 
 -- Stock qb-vehiclekeys client events. A client can never grant itself keys:
@@ -44,7 +44,7 @@ local function requestGrant(plate)
                 TriggerServerEvent('qb-vehiclekeys:server:AcquireVehicleKeys', NetworkGetNetworkIdFromEntity(vehicle))
             end
             Wait(RETRY_INTERVAL)
-            if Kora.callback.trigger('qbvehiclekeys:server:legacyHasKeys', plate) == true then break end
+            if Kora.callback.trigger('kora_vehiclekeys:server:legacyHasKeys', plate) == true then break end
         end
         pending[plate] = nil
     end)

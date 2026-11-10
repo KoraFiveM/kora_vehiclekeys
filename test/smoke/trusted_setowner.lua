@@ -180,7 +180,7 @@ harness.test('owned, locked, key-held or out-of-range vehicles are refused', fun
     fire(1, 7); harness.assertFalse(hasKeys(1), 'player_vehicles row')
     owned = nil; spawn(1); states[vehicle] = { vehicleid = 4 }
     fire(1, 7); harness.assertFalse(hasKeys(1), 'tagged owned entity')
-    states[vehicle] = { ['qbvehiclekeys:locked'] = true }
+    states[vehicle] = { ['kora_vehiclekeys:locked'] = true }
     fire(1, 7); harness.assertFalse(hasKeys(1), 'locked state')
     states[vehicle] = nil; lockStatus = 2
     fire(1, 7); harness.assertFalse(hasKeys(1), 'native lock')
@@ -265,4 +265,4 @@ harness.test('LegacyClientGrants stays off by default', function()
     harness.assertTrue(Config.TrustedSetOwner.enabled)
 end)
 
-harness.report('qbvehiclekeys trusted SetOwner')
+harness.report('kora_vehiclekeys trusted SetOwner')

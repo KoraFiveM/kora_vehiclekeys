@@ -61,4 +61,4 @@ expect(#sent == 1, 'a new request after giving up starts again'); drain()
 sent = { 1, 2, 3 }
 handlers['qb-vehiclekeys:client:RemoveKeys']('QB 123')
 expect(#sent == 4 and sent[4][1] == 'qb-vehiclekeys:server:RemoveOwnKeys', 'RemoveKeys asks the server to drop own key')
-print('qbvehiclekeys legacy client events: 6 checks passed')
+print('kora_vehiclekeys legacy client events: 6 checks passed')

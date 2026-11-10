@@ -155,7 +155,7 @@ harness.test('AcquireVehicleKeys with opt-in requires driving a vehicle with tha
     Config.LegacyClientGrants = false
 end)
 
-local function lockedState() return (states[vehicle] or {})['qbvehiclekeys:locked'] end
+local function lockedState() return (states[vehicle] or {})['kora_vehiclekeys:locked'] end
 harness.test('setVehLockState needs access and a valid vehicle', function()
     fire('qb-vehiclekeys:server:setVehLockState', 1, 7, 2)
     harness.assertEqual(lockedState(), nil, 'no key, no change')
@@ -199,4 +199,4 @@ harness.test('events are throttled and RemoveOwnKeys only affects the caller', f
     harness.assertTrue(export('HasKeys')(2, 'AA 1'))
 end)
 
-harness.report('qbvehiclekeys legacy server')
+harness.report('kora_vehiclekeys legacy server')

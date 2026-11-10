@@ -38,8 +38,8 @@ _G.Kora = {
     entities = { requestControl = function() return true end },
     callback = { trigger = function(name)
         triggers[#triggers + 1] = name
-        if name == 'qbvehiclekeys:server:accessRequested' then return hasKeys end
-        if name == 'qbvehiclekeys:server:hotwireStarted' or name == 'qbvehiclekeys:server:lockpickStarted' then return 'auth' end
+        if name == 'kora_vehiclekeys:server:accessRequested' then return hasKeys end
+        if name == 'kora_vehiclekeys:server:hotwireStarted' or name == 'kora_vehiclekeys:server:lockpickStarted' then return 'auth' end
     end },
     events = { onPush = function(name, fn) pushHandlers[name] = fn end, trigger = function(name) triggers[#triggers + 1] = name end },
     state = { onChange = function() end },
@@ -56,7 +56,7 @@ dofile(resourceDir .. 'client/main.lua')
 
 harness.test('no vehicle in reach: friendly notice, no server call', function()
     nearby, notifications, triggers = 0, {}, {}
-    pushHandlers['qbvehiclekeys:client:lockpickUsed']()
+    pushHandlers['kora_vehiclekeys:client:lockpickUsed']()
     harness.assertEqual(#notifications, 1)
     harness.assertEqual(notifications[1].message, Config.Text.lockpickNoVehicle)
     harness.assertEqual(#triggers, 0)
@@ -64,22 +64,22 @@ end)
 
 harness.test('on foot next to a vehicle starts the door pick, not hotwiring', function()
     nearby, notifications, triggers, inCar = 70, {}, {}, false
-    pushHandlers['qbvehiclekeys:client:lockpickUsed']()
-    harness.assertEqual(triggers[#triggers - 1], 'qbvehiclekeys:server:lockpickStarted')
-    harness.assertEqual(triggers[#triggers], 'qbvehiclekeys:server:hotwireFinished')
+    pushHandlers['kora_vehiclekeys:client:lockpickUsed']()
+    harness.assertEqual(triggers[#triggers - 1], 'kora_vehiclekeys:server:lockpickStarted')
+    harness.assertEqual(triggers[#triggers], 'kora_vehiclekeys:server:hotwireFinished')
 end)
 
 harness.test('driver seat without keys starts the hotwire flow', function()
     nearby, notifications, triggers, inCar = 70, {}, {}, true
-    pushHandlers['qbvehiclekeys:client:lockpickUsed']()
-    harness.assertEqual(triggers[#triggers - 1], 'qbvehiclekeys:server:hotwireStarted')
-    harness.assertEqual(triggers[#triggers], 'qbvehiclekeys:server:hotwireFinished')
+    pushHandlers['kora_vehiclekeys:client:lockpickUsed']()
+    harness.assertEqual(triggers[#triggers - 1], 'kora_vehiclekeys:server:hotwireStarted')
+    harness.assertEqual(triggers[#triggers], 'kora_vehiclekeys:server:hotwireFinished')
 end)
 
 harness.test('key holders are told no lockpick is needed', function()
     nearby, hasKeys, notifications, triggers = 70, true, {}, {}
     Kora.callback.trigger = function(name) triggers[#triggers + 1] = name return true end
-    pushHandlers['qbvehiclekeys:client:lockpickUsed']()
+    pushHandlers['kora_vehiclekeys:client:lockpickUsed']()
     harness.assertEqual(notifications[1].message, Config.Text.lockpickNotNeeded)
 end)
 

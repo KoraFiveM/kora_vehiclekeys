@@ -42,7 +42,7 @@ local function hasIgnitionAccess(vehicle)
 
     -- A raised callback (timeout, rate limit) counts as "no access" and is not
     -- cached; it must never abort the calling thread (the hotwire busy flag).
-    local ok, result = pcall(Kora.callback.trigger, 'qbvehiclekeys:server:accessRequested', networkId)
+    local ok, result = pcall(Kora.callback.trigger, 'kora_vehiclekeys:server:accessRequested', networkId)
     if not ok then return false end
     local allowed = result == true
     accessCache[networkId] = { allowed = allowed, expiresAt = GetGameTimer() + Config.AccessCacheMs }
@@ -123,7 +123,7 @@ function BikeGuard.check()
         vehicle = GetVehiclePedIsTryingToEnter(ped)
     end
     if not vehicle or vehicle == 0 or not isBike(vehicle) then return end
-    if Entity(vehicle).state['qbvehiclekeys:locked'] ~= true then return end
+    if Entity(vehicle).state['kora_vehiclekeys:locked'] ~= true then return end
     if not seated then lastBikeTarget, lastBikeTargetAt = vehicle, GetGameTimer() end
     -- The access check is a server round trip: the ped may be seated by the time
     -- it answers, and ClearPedTasks does nothing to a seated ped.
@@ -192,7 +192,7 @@ local function toggleNearestVehicle()
     if vehicle and isNoLockVehicle(vehicle) then return end
     local networkId = vehicleNetworkId(vehicle)
     if not networkId then return notify('No nearby networked vehicle.', 'error') end
-    local locked, err = Kora.callback.trigger('qbvehiclekeys:server:toggleRequested', networkId)
+    local locked, err = Kora.callback.trigger('kora_vehiclekeys:server:toggleRequested', networkId)
     if locked == nil then return notify(err or 'Could not change the vehicle lock.', 'error') end
     applyLockState(vehicle, locked)
     LockFeedback.localToggle(vehicle, locked)
@@ -244,7 +244,7 @@ local function lockpickFromItem()
             return notify(Config.Text.lockpickNotNeeded, 'info', Config.Text.titleHotwire)
         end
         local authorization, err = requestHotwireSession(
-            inVehicle and 'qbvehiclekeys:server:hotwireStarted' or 'qbvehiclekeys:server:lockpickStarted', networkId)
+            inVehicle and 'kora_vehiclekeys:server:hotwireStarted' or 'kora_vehiclekeys:server:lockpickStarted', networkId)
         if not authorization then
             busyHotwiring = false
             if ownText and not inVehicle then
@@ -253,7 +253,7 @@ local function lockpickFromItem()
             return notify(err or Config.Text.hotwireFailed, 'error', Config.Text.titleHotwireFailed)
         end
         local result = Kora.minigames.play('lockpick', nil, authorization)
-        Kora.events.trigger('qbvehiclekeys:server:hotwireFinished', authorization, result and result.proof or nil)
+        Kora.events.trigger('kora_vehiclekeys:server:hotwireFinished', authorization, result and result.proof or nil)
         busyHotwiring = false
     end)
 end
@@ -290,43 +290,43 @@ local function hotwireCurrentVehicle()
             busyHotwiring = false
             return
         end
-        local authorization, err = requestHotwireSession('qbvehiclekeys:server:hotwireStarted', networkId)
+        local authorization, err = requestHotwireSession('kora_vehiclekeys:server:hotwireStarted', networkId)
         if not authorization then
             busyHotwiring = false
             return notify(err or Config.Text.hotwireFailed, 'error', Config.Text.titleHotwireFailed)
         end
         local result = Kora.minigames.play('lockpick', nil, authorization)
-        Kora.events.trigger('qbvehiclekeys:server:hotwireFinished', authorization, result and result.proof or nil)
+        Kora.events.trigger('kora_vehiclekeys:server:hotwireFinished', authorization, result and result.proof or nil)
         busyHotwiring = false
     end)
 end
 
-Kora.events.onPush('qbvehiclekeys:client:lockStateChanged', function(networkId, locked)
+Kora.events.onPush('kora_vehiclekeys:client:lockStateChanged', function(networkId, locked)
     if type(networkId) ~= 'number' or type(locked) ~= 'boolean' then return end
     applyLockState(NetworkGetEntityFromNetworkId(networkId), locked)
 end)
 
-Kora.events.onPush('qbvehiclekeys:client:lockFeedback', function(networkId, locked, source)
+Kora.events.onPush('kora_vehiclekeys:client:lockFeedback', function(networkId, locked, source)
     if type(networkId) ~= 'number' or type(locked) ~= 'boolean' then return end
     LockFeedback.remote(NetworkGetEntityFromNetworkId(networkId), locked, source)
 end)
 
-Kora.events.onPush('qbvehiclekeys:client:keysChanged', function()
+Kora.events.onPush('kora_vehiclekeys:client:keysChanged', function()
     accessCache = {}
 end)
 
-Kora.events.onPush('qbvehiclekeys:client:lockpickUsed', lockpickFromItem)
+Kora.events.onPush('kora_vehiclekeys:client:lockpickUsed', lockpickFromItem)
 
 -- Stock qb-inventory / qb-vehiclekeys event for a lockpick use.
 RegisterNetEvent('lockpicks:UseLockpick')
 AddEventHandler('lockpicks:UseLockpick', function() lockpickFromItem() end)
 
-Kora.events.onPush('qbvehiclekeys:client:physicalKeyUsed', function(metadata)
+Kora.events.onPush('kora_vehiclekeys:client:physicalKeyUsed', function(metadata)
     if type(metadata) ~= 'table' then return end
     toggleNearestVehicle()
 end)
 
-Kora.state.onChange('qbvehiclekeys:locked', nil, function(change)
+Kora.state.onChange('kora_vehiclekeys:locked', nil, function(change)
     if change.entity ~= 0 then applyLockState(change.entity, change.value == true) end
 end)
 

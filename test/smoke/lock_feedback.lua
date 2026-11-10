@@ -116,22 +116,22 @@ harness.test('textUI toggle shows bottom-centre status then hides', function()
 end)
 
 harness.test('lights toggle via broadcast, works for any vehicle type', function()
-    allOff(); reset(); pushHandlers['qbvehiclekeys:client:lockFeedback'](7, true, 9)
+    allOff(); reset(); pushHandlers['kora_vehiclekeys:client:lockFeedback'](7, true, 9)
     harness.assertEqual(count('lights'), 0)
-    Config.lockFeedback.lights = true; reset(); pushHandlers['qbvehiclekeys:client:lockFeedback'](7, true, 9)
+    Config.lockFeedback.lights = true; reset(); pushHandlers['kora_vehiclekeys:client:lockFeedback'](7, true, 9)
     harness.assertTrue(count('indicators') > 0 and count('lights') > 0)
-    distance = 500.0; reset(); pushHandlers['qbvehiclekeys:client:lockFeedback'](7, true, 9)
+    distance = 500.0; reset(); pushHandlers['kora_vehiclekeys:client:lockFeedback'](7, true, 9)
     harness.assertEqual(count('lights'), 0, 'too far to see')
     distance = 3.0
 end)
 
 harness.test('soundNearby plays for others in range only', function()
     allOff(); Config.lockFeedback.soundNearby = true
-    reset(); pushHandlers['qbvehiclekeys:client:lockFeedback'](7, true, 9)
+    reset(); pushHandlers['kora_vehiclekeys:client:lockFeedback'](7, true, 9)
     harness.assertEqual(count('entitysound'), 1)
-    reset(); pushHandlers['qbvehiclekeys:client:lockFeedback'](7, true, myServerId)
+    reset(); pushHandlers['kora_vehiclekeys:client:lockFeedback'](7, true, myServerId)
     harness.assertEqual(count('entitysound'), 0, 'source uses its own local sound')
-    distance = 30.0; reset(); pushHandlers['qbvehiclekeys:client:lockFeedback'](7, true, 9)
+    distance = 30.0; reset(); pushHandlers['kora_vehiclekeys:client:lockFeedback'](7, true, 9)
     harness.assertEqual(count('entitysound'), 0, 'outside soundRange')
     distance = 3.0
 end)
@@ -145,4 +145,4 @@ harness.test('failed lock action gives no feedback', function()
     toggleResult, toggleErr = true, nil
 end)
 
-harness.report('qbvehiclekeys lock feedback')
+harness.report('kora_vehiclekeys lock feedback')

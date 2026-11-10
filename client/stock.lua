@@ -53,7 +53,7 @@ AddEventHandler('qb-vehiclekeys:client:GiveKeys', function(id)
     local vehicle = VehicleKeys.currentOrClosestVehicle(Config.InteractionDistance)
     if not vehicle then return end
     local plate = plateOf(vehicle)
-    if plate == '' or Kora.callback.trigger('qbvehiclekeys:server:legacyHasKeys', plate) ~= true then
+    if plate == '' or Kora.callback.trigger('kora_vehiclekeys:server:legacyHasKeys', plate) ~= true then
         return VehicleKeys.notify("You don't have keys to this vehicle.", 'error')
     end
 

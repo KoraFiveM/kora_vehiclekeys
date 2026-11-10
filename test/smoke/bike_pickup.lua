@@ -19,7 +19,7 @@ _G.ClearPedTasks = function() cleared = cleared + 1 end
 _G.GetEntityModel = function() return 1 end
 _G.IsThisModelABike = function() return isBikeModel end
 _G.IsThisModelABicycle = function() return false end
-_G.Entity = function() return { state = { ['qbvehiclekeys:locked'] = stateLocked } } end
+_G.Entity = function() return { state = { ['kora_vehiclekeys:locked'] = stateLocked } } end
 _G.DoesEntityExist = function() return true end
 _G.NetworkGetEntityIsNetworked = function() return true end
 _G.NetworkGetNetworkIdFromEntity = function() return 7 end
@@ -63,12 +63,12 @@ end)
 
 harness.test('a locked bike never gets the native locked-door status', function()
     reset()
-    push['qbvehiclekeys:client:lockStateChanged'](7, true)
+    push['kora_vehiclekeys:client:lockStateChanged'](7, true)
     harness.assertEqual(lockedStatus[1], 1, 'bike stays status 1')
     isBikeModel = false
-    push['qbvehiclekeys:client:lockStateChanged'](7, true)
+    push['kora_vehiclekeys:client:lockStateChanged'](7, true)
     harness.assertEqual(lockedStatus[2], 2, 'cars are still locked')
-    push['qbvehiclekeys:client:lockStateChanged'](7, false)
+    push['kora_vehiclekeys:client:lockStateChanged'](7, false)
     harness.assertEqual(lockedStatus[3], 1, 'cars unlock')
 end)
 
@@ -160,4 +160,4 @@ harness.test('the guard runs only from an enteringVehicle edge onto a bike, one 
     harness.assertEqual(#threads, 2, 'a later attempt starts a fresh guard')
 end)
 
-harness.report('qbvehiclekeys bike pickup')
+harness.report('kora_vehiclekeys bike pickup')

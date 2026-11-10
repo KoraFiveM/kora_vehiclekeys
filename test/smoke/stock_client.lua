@@ -53,8 +53,8 @@ _G.Kora = {
     entities = { requestControl = function() return true end },
     callback = { trigger = function(name, ...)
         callbacks[#callbacks + 1] = { name, ... }
-        if name == 'qbvehiclekeys:server:legacyHasKeys' then return hasKey end
-        if name == 'qbvehiclekeys:server:toggleRequested' then return true end
+        if name == 'kora_vehiclekeys:server:legacyHasKeys' then return hasKey end
+        if name == 'kora_vehiclekeys:server:toggleRequested' then return true end
     end },
     events = { onPush = function() end, trigger = function(name, ...) triggered[#triggered + 1] = { name, ... } end },
     state = { onChange = function() end },
@@ -79,7 +79,7 @@ harness.test('togglelocks and engine are registered commands', function()
     harness.assertTrue(type(commands.togglelocks) == 'function' and type(commands.engine) == 'function')
     callbacks = {}
     commands.togglelocks()
-    harness.assertEqual(callbacks[1][1], 'qbvehiclekeys:server:toggleRequested')
+    harness.assertEqual(callbacks[1][1], 'kora_vehiclekeys:server:toggleRequested')
 end)
 
 harness.test('addNoLockVehicles stops lock toggling client-side only; removeNoLockVehicles restores it', function()
@@ -139,4 +139,4 @@ harness.test('VehicleKeys table is exposed to the stock handlers', function()
     harness.assertTrue(VehicleKeys ~= nil and VehicleKeys.toggleLocks ~= nil)
 end)
 
-harness.report('qbvehiclekeys stock parity client')
+harness.report('kora_vehiclekeys stock parity client')
