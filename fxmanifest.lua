@@ -5,7 +5,7 @@ lua54 'yes'
 
 name 'kora_vehiclekeys'
 author 'qbcore2'
-version '1.0.0'
+version '0.1.0'
 description 'Server-authoritative vehicle keys, locks, and hotwiring for kora_lib/kora_core'
 
 dependencies {
