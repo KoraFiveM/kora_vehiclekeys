@@ -1,6 +1,6 @@
 ---
 title: Keys and access
-sidebar_position: 4
+sidebar_position: 6
 ---
 
 # Keys and access

@@ -27,7 +27,7 @@ The manifest provides `qb-vehiclekeys`. The surface below is derived from code. 
 | `qb-vehiclekeys:client:ToggleEngine` | Toggle the engine (driver with access only). |
 | `lockpicks:UseLockpick` | Start the lockpick flow. |
 
-A server script triggering `qb-vehiclekeys:client:AddKeys` on a client cannot grant keys the way stock does; use the exports in [Exports](./exports.md). Stock persistent keys (player metadata) are not implemented.
+A server script triggering `qb-vehiclekeys:client:AddKeys` on a client cannot grant keys the way stock does; use the exports in [Server exports](./api/server-exports.md) and [Client exports](./api/client-exports.md). Stock persistent keys (player metadata) are not implemented.
 
 ## Key requests and trusted SetOwner
 
