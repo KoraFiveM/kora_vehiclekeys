@@ -1,0 +1,60 @@
+{
+  "resource": "kora_vehiclekeys",
+  "standardsRevision": "2026-11-12.2",
+  "realms": {
+    "client": [
+      "client/compat.lua",
+      "client/feedback.lua",
+      "client/main.lua",
+      "client/stock.lua"
+    ],
+    "server": [
+      "server/main.lua"
+    ],
+    "shared": [
+      "config.lua"
+    ],
+    "manifest": [
+      "fxmanifest.lua"
+    ],
+    "test": [
+      "test/harness.lua",
+      "test/smoke/bike_pickup.lua",
+      "test/smoke/engine_toggle.lua",
+      "test/smoke/hotwire.lua",
+      "test/smoke/legacy_client.lua",
+      "test/smoke/legacy_client_events.lua",
+      "test/smoke/legacy_server.lua",
+      "test/smoke/lock_feedback.lua",
+      "test/smoke/lockpick_item.lua",
+      "test/smoke/lockpick_item_client.lua",
+      "test/smoke/server.lua",
+      "test/smoke/stock_client.lua",
+      "test/smoke/stock_server.lua",
+      "test/smoke/trusted_setowner.lua"
+    ]
+  },
+  "exclude": [
+    ".git/*",
+    ".github/*",
+    ".standards/*",
+    "node_modules/*",
+    "**/node_modules/*",
+    "vendor/*",
+    "**/vendor/*",
+    "web/*",
+    "ui/*",
+    "html/*",
+    "dist/*",
+    "artifacts/*",
+    "runtime/*",
+    "txData/*",
+    "storage/*",
+    "stream/*",
+    "docs/*",
+    "__pycache__/*",
+    "modules/lookup/data/*"
+  ],
+  "project": "Kora Framework",
+  "copyright": "Copyright © 2026 Kora Framework"
+}
