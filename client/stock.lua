@@ -7,12 +7,16 @@ end
 
 Kora.compat.provideExport('qb-vehiclekeys', 'addNoLockVehicles', function(model)
     local hash = modelHash(model)
-    if hash then VehicleKeys.noLockModels[hash] = true end
+    if hash then
+        VehicleKeys.noLockModels[hash] = true
+    end
 end)
 
 Kora.compat.provideExport('qb-vehiclekeys', 'removeNoLockVehicles', function(model)
     local hash = modelHash(model)
-    if hash then VehicleKeys.noLockModels[hash] = nil end
+    if hash then
+        VehicleKeys.noLockModels[hash] = nil
+    end
 end)
 
 RegisterCommand('togglelocks', function() VehicleKeys.toggleLocks() end, false)
@@ -39,22 +43,21 @@ local function closestPlayerId()
     for _, player in ipairs(GetActivePlayers()) do
         if player ~= self then
             local distance = #(GetEntityCoords(GetPlayerPed(player)) - coords)
-            if distance < bestDistance then best, bestDistance = GetPlayerServerId(player), distance end
+            if distance < bestDistance then
+                best, bestDistance = GetPlayerServerId(player), distance
+            end
         end
     end
     return best
 end
 
--- Stock: give keys to the given id, else to everyone else in the vehicle, else
--- to the closest player. Only asks the server, which re-checks that the giver
--- holds the key and that every receiver is within reach.
 RegisterNetEvent('qb-vehiclekeys:client:GiveKeys')
 AddEventHandler('qb-vehiclekeys:client:GiveKeys', function(id)
     local vehicle = VehicleKeys.currentOrClosestVehicle(Config.InteractionDistance)
     if not vehicle then return end
     local plate = plateOf(vehicle)
     if plate == '' or Kora.callback.trigger('kora_vehiclekeys:server:legacyHasKeys', plate) ~= true then
-        return VehicleKeys.notify("You don't have keys to this vehicle.", 'error')
+        return VehicleKeys.notify(Kora.lang('vehicle_key_required'), 'error')
     end
 
     local receivers
@@ -66,6 +69,6 @@ AddEventHandler('qb-vehiclekeys:client:GiveKeys', function(id)
         local closest = closestPlayerId()
         receivers = closest and { closest } or {}
     end
-    if #receivers == 0 then return VehicleKeys.notify('There is nobody nearby to hand keys to', 'error') end
+    if #receivers == 0 then return VehicleKeys.notify(Kora.lang('no_nearby_players'), 'error') end
     TriggerServerEvent('qb-vehiclekeys:server:GiveVehicleKeys', receivers, plate)
 end)
