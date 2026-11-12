@@ -1,3 +1,12 @@
+> [!WARNING]
+> **Kora Framework is in alpha and actively being developed.**
+>
+> This resource is a work in progress. Features may be incomplete or unstable,
+> and APIs, configuration, and behavior may change. It is not ready for production use.
+>
+> **Help shape Kora:** try it out, share feedback, report bugs through this
+> repository’s Issues, and contribute improvements through pull requests.
+
 # kora_vehiclekeys
 
 Server-authoritative vehicle locks, ignition checks, physical vehicle keys, and hotwiring. It uses kora_lib keybinds, notifications, secure callbacks/events, and the proof-backed kora_lib lockpick minigame. Item access is checked on the server through kora_core's inventory exports.
