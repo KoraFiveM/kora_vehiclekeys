@@ -1,6 +1,6 @@
 ---
 title: Lock feedback and bikes
-sidebar_position: 6
+sidebar_position: 8
 ---
 
 # Lock feedback and bikes

@@ -4,7 +4,7 @@
 
 ## Documentation
 
-User-facing documentation lives in `docs/` (Markdown, published via the Kora Docusaurus site, kora_docs_next). Read `docs/index.md` first for an overview of features, configuration, commands, exports and events.
+User-facing documentation lives in `docs/` (Markdown, published via the Kora Docusaurus site, kora_docs_next). Read `docs/index.md` first; it has the overview and a documentation map. Layout: `index.md` (hub), `installation.md`, `how-to-use.md`, `commands.md` (commands and keybinds), `api/` (`server-exports.md`, `client-exports.md`, `configuration.md` for every `Config` option) and topic pages (`keys.md`, `lockpicking.md`, `feedback.md`, `events.md`, `compatibility.md`, `troubleshooting.md`). Update the page that owns the topic; export changes go to `api/`, config changes to `api/configuration.md`.
 
 When you add, change, or remove a feature, config option, command, export, event, item, permission, or database table/column, update the matching page in `docs/` in the same change. Keep docs accurate to the code; do not document behaviour that does not exist.
 

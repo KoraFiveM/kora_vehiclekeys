@@ -5,7 +5,7 @@ sidebar_position: 9
 
 # Events and callbacks
 
-Kora events and callbacks go through `kora_lib` (`Kora.events`, `Kora.callback`). Rate limits are in [Configuration](./configuration.md).
+Kora events and callbacks go through `kora_lib` (`Kora.events`, `Kora.callback`). Rate limits are in [Configuration](./api/configuration.md).
 
 ## Server callbacks
 

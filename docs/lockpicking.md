@@ -1,6 +1,6 @@
 ---
 title: Lockpicking and hotwiring
-sidebar_position: 5
+sidebar_position: 7
 ---
 
 # Lockpicking and hotwiring
