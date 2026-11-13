@@ -1,10 +1,10 @@
 local temporaryKeys, hotwireSessions = {}, {}
 local jobVehicleModels = {}
 local VEHICLE_VALIDATION_MESSAGES = {
-    invalid_network_id = 'Invalid vehicle.',
-    routing_bucket_mismatch = 'Vehicle is in another instance.',
-    too_far = 'Move closer to the vehicle.',
-    driver_required = 'You must be in the driver seat.',
+    invalid_network_id = Kora.lang('invalid_vehicle'),
+    routing_bucket_mismatch = Kora.lang('vehicle_other_instance'),
+    too_far = Kora.lang('vehicle_too_far'),
+    driver_required = Kora.lang('driver_required'),
 }
 
 for jobName, models in pairs(Config.JobVehicles or {}) do
@@ -42,7 +42,7 @@ local function validateVehicle(src, networkId, maximumDistance, requireDriver)
     })
     if vehicle then return vehicle end
 
-    return nil, VEHICLE_VALIDATION_MESSAGES[reason] or 'Vehicle is no longer available.'
+    return nil, VEHICLE_VALIDATION_MESSAGES[reason] or Kora.lang('vehicle_unavailable')
 end
 
 local function playerKeys(src)
@@ -61,7 +61,9 @@ local function metadataMatches(item, plate)
 
     for field, value in pairs(expected) do
         local required = value == true and plate or value
-        if required == '{plate}' then required = plate end
+        if required == '{plate}' then
+            required = plate
+        end
         if required == plate then
             if normalisePlate(info[field]) ~= plate then return false end
         elseif info[field] ~= required then
@@ -137,7 +139,11 @@ local function maybeBreakLockpick(src, session, successful)
     local chance = tonumber(successful and chances.success or chances.failure) or 0
     if chance <= 0 or math.random(100) > chance then return end
     exports.kora_core:removeItem(src, session.item or Config.Lockpick.item, 1, session.slot, 'vehicle-lockpick-broke')
-    Kora.notify.send(src, { title = Config.Text.titleHotwireFailed, message = 'Your lockpick broke.', type = 'error' })
+    Kora.notify.send(src, {
+        title = Config.Text.titleHotwireFailed,
+        message = Kora.lang('lockpick_broke'),
+        type = 'error',
+    })
 end
 
 ---@param src integer
@@ -174,7 +180,6 @@ Kora.compat.provideExport('qb-vehiclekeys', 'HasKeys', function(src, plate)
     return hasKeys(src, plate)
 end)
 
--- Read only: clients can query only their own physical/temporary keys.
 Kora.callback.register('kora_vehiclekeys:server:legacyHasKeys', function(src, plate)
     return hasKeys(src, plate)
 end, { rateLimit = Config.RateLimits.access })
@@ -185,9 +190,6 @@ if Config.PhysicalKey.enabled then
     end)
 end
 
--- Using a lockpick item only asks the client to start the lockpick flow; the
--- server still validates the vehicle, keys and the item in hotwireStarted.
--- Nothing is consumed here: breaking stays with maybeBreakLockpick.
 if Config.Lockpick.registerUsable ~= false then
     for _, name in ipairs(lockpickNames()) do
         exports.kora_core:createUseable(name, function(src)
@@ -208,7 +210,7 @@ Kora.callback.register('kora_vehiclekeys:server:toggleRequested', function(src, 
     if not vehicle then return nil, vehicleErr end
     local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
     if not plate or not hasVehicleAccess(src, vehicle, plate) then
-        return nil, 'You do not have the keys for this vehicle.'
+        return nil, Kora.lang('vehicle_key_required')
     end
 
     local locked = Entity(vehicle).state['kora_vehiclekeys:locked'] ~= true
@@ -221,39 +223,46 @@ Kora.callback.register('kora_vehiclekeys:server:toggleRequested', function(src, 
 end, { rateLimit = Config.RateLimits.toggle })
 
 Kora.callback.register('kora_vehiclekeys:server:hotwireStarted', function(src, networkId)
-    if not Config.Hotwire.enabled then return nil, 'Hotwiring is disabled.' end
+    if not Config.Hotwire.enabled then return nil, Kora.lang('hotwiring_disabled') end
     local vehicle, vehicleErr = validateVehicle(src, networkId, Config.InteractionDistance, true)
     if not vehicle then return nil, vehicleErr end
     local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
-    if not plate then return nil, 'Vehicle has no usable plate.' end
-    if hasVehicleAccess(src, vehicle, plate) then return nil, 'You already have the keys.' end
+    if not plate then return nil, Kora.lang('vehicle_plate_missing') end
+    if hasVehicleAccess(src, vehicle, plate) then return nil, Kora.lang('already_have_keys') end
 
     local slot, itemName = lockpickItem(src)
-    if not slot then return nil, 'You need a lockpick.' end
+    if not slot then return nil, Kora.lang('lockpick_required') end
     local authorization = Kora.minigames.authorizeProof(src, 'lockpick', Config.Lockpick.difficulty)
-    if not authorization then return nil, 'Could not start the lockpick challenge.' end
+    if not authorization then return nil, Kora.lang('lockpick_challenge_failed') end
 
     hotwireSessions[src] = {
-        authorization = authorization, networkId = networkId, plate = plate, slot = slot, item = itemName,
-        distance = Config.InteractionDistance, requireDriver = true, grantKey = Config.Hotwire.grantTemporaryKey == true,
+        authorization = authorization,
+        networkId = networkId,
+        plate = plate,
+        slot = slot,
+        item = itemName,
+        distance = Config.InteractionDistance,
+        requireDriver = true,
+        grantKey = Config.Hotwire.grantTemporaryKey == true,
     }
     return authorization
 end, { rateLimit = Config.RateLimits.hotwire })
 
 Kora.callback.register('kora_vehiclekeys:server:lockpickStarted', function(src, networkId)
-    if not Config.Hotwire.enabled then return nil, 'Lockpicking is disabled.' end
+    if not Config.Hotwire.enabled then return nil, Kora.lang('lockpicking_disabled') end
     local vehicle, vehicleErr = validateVehicle(src, networkId, Config.InteractionDistance, false)
     if not vehicle then return nil, vehicleErr end
     local plate = normalisePlate(GetVehicleNumberPlateText(vehicle))
-    if not plate then return nil, 'Vehicle has no usable plate.' end
-    if hasVehicleAccess(src, vehicle, plate) then return nil, 'You already have the keys.' end
-    local locked = Entity(vehicle).state['kora_vehiclekeys:locked'] == true or (GetVehicleDoorLockStatus(vehicle) or 0) > 1
-    if not locked then return nil, 'This vehicle is not locked.' end
+    if not plate then return nil, Kora.lang('vehicle_plate_missing') end
+    if hasVehicleAccess(src, vehicle, plate) then return nil, Kora.lang('already_have_keys') end
+    local locked = Entity(vehicle).state['kora_vehiclekeys:locked'] == true
+        or (GetVehicleDoorLockStatus(vehicle) or 0) > 1
+    if not locked then return nil, Kora.lang('vehicle_not_locked') end
 
     local slot, itemName = lockpickItem(src)
-    if not slot then return nil, 'You need a lockpick.' end
+    if not slot then return nil, Kora.lang('lockpick_required') end
     local authorization = Kora.minigames.authorizeProof(src, 'lockpick', Config.Lockpick.difficulty)
-    if not authorization then return nil, 'Could not start the lockpick challenge.' end
+    if not authorization then return nil, Kora.lang('lockpick_challenge_failed') end
 
     hotwireSessions[src] = {
         authorization = authorization, networkId = networkId, plate = plate, slot = slot, item = itemName,
@@ -274,36 +283,41 @@ Kora.events.register('kora_vehiclekeys:server:hotwireFinished', function(src, au
     maybeBreakLockpick(src, session, successful)
     if not successful then
         if not session.requireDriver and Config.Lockpick.lockpickFailureText == true then
-            return Kora.notify.send(src, { title = Config.Text.titleLockpickFailed, message = Config.Text.lockpickFailed, type = 'error' })
+            return Kora.notify.send(src, {
+                title = Config.Text.titleLockpickFailed,
+                message = Config.Text.lockpickFailed,
+                type = 'error',
+            })
         end
-        return Kora.notify.send(src, { title = Config.Text.titleHotwireFailed, message = 'The ignition resisted your lockpick.', type = 'error' })
+        return Kora.notify.send(src, {
+            title = Config.Text.titleHotwireFailed,
+            message = Kora.lang('ignition_resisted'),
+            type = 'error',
+        })
     end
 
-    if session.grantKey then giveKeys(src, session.plate, true) end
+    if session.grantKey then
+        giveKeys(src, session.plate, true)
+    end
     setLocked(vehicle, session.networkId, false)
     Kora.notify.send(src, {
         title = Config.Text.titleHotwire,
-        message = session.requireDriver and 'Vehicle hotwired.' or 'You picked the door lock open.',
+        message = Kora.lang(session.requireDriver and 'vehicle_hotwired' or 'door_lockpicked'),
         type = 'success',
     })
 end, { rateLimit = Config.RateLimits.hotwire })
 
--- Server exports are trusted callers (other server scripts) and map straight
--- onto giveKeys/removeKeys, so Config.AllowTemporaryKeys still applies. Net
--- events below are UNTRUSTED client input: each one re-derives authority on the
--- server (key ownership, driver seat, distance) exactly like the callbacks
--- above and never accepts a client's claim about who or what it may affect.
 local function isOnline(src)
     return type(src) == 'number' and src >= 1 and src % 1 == 0 and GetPlayerPed(src) ~= 0
 end
 
--- Stock servers call (id, plate); tolerate swapped arguments.
 local function legacyArgs(a, b)
-    if type(a) == 'string' and type(b) == 'number' then a, b = b, a end
+    if type(a) == 'string' and type(b) == 'number' then
+        a, b = b, a
+    end
     return a, b
 end
 
--- Stock GiveKeys(id[, plate]): without a plate the vehicle the player is in is used.
 local function currentPlate(src)
     local vehicle = GetVehiclePedIsIn(GetPlayerPed(src), false)
     if not vehicle or vehicle == 0 then return nil end
@@ -313,7 +327,9 @@ end
 Kora.compat.provideExport('qb-vehiclekeys', 'GiveKeys', function(a, b)
     local src, plate = legacyArgs(a, b)
     if not isOnline(src) then return false end
-    if plate == nil then plate = currentPlate(src) end
+    if plate == nil then
+        plate = currentPlate(src)
+    end
     return giveKeys(src, plate)
 end)
 
@@ -327,7 +343,10 @@ local legacyLastCall = {}
 local function legacyThrottled(src, name, minInterval)
     local now = GetGameTimer()
     local bySource = legacyLastCall[src]
-    if not bySource then bySource = {}; legacyLastCall[src] = bySource end
+    if not bySource then
+        bySource = {}
+        legacyLastCall[src] = bySource
+    end
     if bySource[name] and now - bySource[name] < (minInterval or 500) then return true end
     bySource[name] = now
     return false
@@ -342,13 +361,9 @@ local function legacyEvent(name, handler, minInterval)
     end)
 end
 
--- Recently created vehicle entities (entityCreated), used to recognise vehicles
--- that just spawned for the requester (stock /car, QBCore SpawnVehicle).
 local spawned = {}
 AddEventHandler('entityCreated', function(entity)
     if type(entity) ~= 'number' or not DoesEntityExist(entity) or GetEntityType(entity) ~= 2 then return end
-    -- Ambient traffic/parked population is owned by a nearby client too; only
-    -- script-created (mission) entities count as spawns.
     if GetEntityPopulationType(entity) ~= 7 then return end
     local creator = NetworkGetFirstEntityOwner(entity)
     spawned[entity] = { at = GetGameTimer(), creator = (creator and creator > 0) and creator or nil }
@@ -378,11 +393,11 @@ end
 
 local function isOwnedVehicle(vehicle, plate)
     if Entity(vehicle).state.vehicleid ~= nil then return true end
-    -- Look the plate up as written (trimmed/upper-cased) and normalised, since
-    -- player_vehicles may store either form.
     local raw = (GetVehicleNumberPlateText(vehicle) or ''):match('^%s*(.-)%s*$'):upper()
     local forms = { plate }
-    if raw ~= plate then forms[2] = raw end
+    if raw ~= plate then
+        forms[2] = raw
+    end
     for index = 1, #forms do
         local ok, row = pcall(function() return exports.kora_core:getByPlate(forms[index]) end)
         if not ok or row ~= nil then return true end -- fail closed when ownership cannot be checked
@@ -390,8 +405,6 @@ local function isOwnedVehicle(vehicle, plate)
     return false
 end
 
--- True when a different live vehicle carries the plate (a duplicate plate must
--- never inherit a key), or a physical key item for it is held by any online player.
 local function plateContested(vehicle, plate)
     for _, other in ipairs(GetAllVehicles()) do
         if other ~= vehicle and normalisePlate(GetVehicleNumberPlateText(other)) == plate then return true end
@@ -429,8 +442,6 @@ local function trustedBasis(src, vehicle, plate)
     return nil
 end
 
--- Stock sends a vehicle network id; older callers send a plate. A plate is only
--- resolved against the vehicle the player is currently inside.
 local function resolveAcquireTarget(src, target)
     local cfg = Config.TrustedSetOwner or {}
     if type(target) == 'number' then
@@ -443,10 +454,6 @@ local function resolveAcquireTarget(src, target)
     return nil
 end
 
--- Stock: the client asks for keys to a vehicle (netId; a plate is tolerated).
--- With Config.LegacyClientGrants the old rule applies: the driven vehicle only.
--- Otherwise Config.TrustedSetOwner decides (see config.lua). Either way the
--- server re-derives everything; the client's claim is never trusted.
 legacyEvent('qb-vehiclekeys:server:AcquireVehicleKeys', function(src, target)
     if Config.LegacyClientGrants == true then
         local ped = GetPlayerPed(src)
@@ -468,9 +475,8 @@ legacyEvent('qb-vehiclekeys:server:AcquireVehicleKeys', function(src, target)
     if giveKeys(src, plate) and cfg.log ~= false then
         print(('[kora_vehiclekeys] granted keys to player %d for plate %s (%s)'):format(src, plate, basis))
     end
-end, 300) -- the client retries every 400 ms while the server learns of a fresh entity
+end, 300)
 
--- Stock: set a vehicle's lock state (1 unlocked, 2+ locked). Requires access.
 legacyEvent('qb-vehiclekeys:server:setVehLockState', function(src, networkId, state)
     if type(networkId) ~= 'number' or type(state) ~= 'number' then return end
     local vehicle = validateVehicle(src, networkId, Config.RemoteDistance, false)
@@ -480,8 +486,6 @@ legacyEvent('qb-vehiclekeys:server:setVehLockState', function(src, networkId, st
     setLocked(vehicle, networkId, state >= 2)
 end)
 
--- Stock: hand a copy of a key to a nearby player (receiver is an id or a list
--- of ids). The giver must hold the key; each receiver must be within reach.
 local MAX_RECEIVERS = 8
 legacyEvent('qb-vehiclekeys:server:GiveVehicleKeys', function(src, receiver, plate)
     plate = type(plate) == 'string' and normalisePlate(plate) or nil
@@ -496,37 +500,46 @@ legacyEvent('qb-vehiclekeys:server:GiveVehicleKeys', function(src, receiver, pla
             and giveKeys(target, plate) then
             seen[target] = true
             given = true
-            Kora.notify.send(target, { title = Config.Text.titleKeys, message = 'You get keys to the vehicle!', type = 'success' })
+            Kora.notify.send(target, {
+                title = Config.Text.titleKeys,
+                message = Kora.lang('keys_received'),
+                type = 'success',
+            })
         end
     end
     if given then
-        Kora.notify.send(src, { title = Config.Text.titleKeys, message = 'You hand over the keys.', type = 'success' })
+        Kora.notify.send(src, {
+            title = Config.Text.titleKeys,
+            message = Kora.lang('keys_handed_over'),
+            type = 'success',
+        })
     end
 end)
 
--- A client dropping its OWN temporary key. Never touches anyone else's keys.
 local function dropOwnKeys(src, plate)
-    if type(plate) == 'string' then removeKeys(src, plate) end
+    if type(plate) == 'string' then
+        removeKeys(src, plate)
+    end
 end
 legacyEvent('qb-vehiclekeys:server:RemoveOwnKeys', dropOwnKeys)
 legacyEvent('qb-vehiclekeys:server:RemoveVehicleKeys', dropOwnKeys)
 
--- Stock breakLockpick lets the client name an item to remove. Kora rolls the
--- break chance itself when it resolves a lockpick attempt (Config.Lockpick.breakChance), so this is a validated no-op: nothing is removed.
 legacyEvent('qb-vehiclekeys:server:breakLockpick', function() end)
 
--- Stock callbacks, answering only about the calling player. Stock returns a
--- { [plate] = true } table; keys are the session keys plus matching key items.
 local function keyList(src)
     local list = {}
     for plate, held in pairs(playerKeys(src)) do
-        if held == 'hotwired' or (Config.AllowTemporaryKeys and held == true) then list[plate] = true end
+        if held == 'hotwired' or (Config.AllowTemporaryKeys and held == true) then
+            list[plate] = true
+        end
     end
     if Config.PhysicalKey.enabled then
         local items = exports.kora_core:getItemsByName(src, Config.PhysicalKey.item)
         for index = 1, #items do
             local plate = type(items[index].info) == 'table' and normalisePlate(items[index].info.plate)
-            if plate and metadataMatches(items[index], plate) then list[plate] = true end
+            if plate and metadataMatches(items[index], plate) then
+                list[plate] = true
+            end
         end
     end
     return list
@@ -536,8 +549,6 @@ Kora.callback.register('qb-vehiclekeys:server:GetVehicleKeys', function(src)
     return keyList(src)
 end, { rateLimit = Config.RateLimits.access })
 
--- Stock: whether a plate belongs to a player. True when the caller holds the
--- key or the plate is a player_vehicles row (unreadable ownership counts as owned).
 Kora.callback.register('qb-vehiclekeys:server:checkPlayerOwned', function(src, plate)
     plate = type(plate) == 'string' and normalisePlate(plate) or nil
     if not plate then return false end
@@ -554,7 +565,11 @@ end
 local function adminTarget(src, args)
     local target, plate = tonumber(args[1]), normalisePlate(args[2])
     if not isOnline(target) or not plate then
-        Kora.notify.send(src, { title = Config.Text.titleKeys, message = 'Fill out the player ID and Plate arguments', type = 'error' })
+        Kora.notify.send(src, {
+            title = Config.Text.titleKeys,
+            message = Kora.lang('player_plate_required'),
+            type = 'error',
+        })
         return nil
     end
     return target, plate
@@ -564,28 +579,32 @@ local function checkPermission(src, permission)
     return exports.kora_core:hasPermission(src, permission) == true
 end
 
-Kora.commands.add('givekeys', 'Hand over the keys to someone. If no ID, gives to closest person or everyone in the vehicle.', {
-    { name = 'id', help = 'Player ID' },
+Kora.commands.add('givekeys', Kora.lang('cmd_givekeys_help'), {
+    { name = 'id', help = Kora.lang('cmd_player_id') },
 }, false, function(src, args)
     if src < 1 then return end
     TriggerClientEvent('qb-vehiclekeys:client:GiveKeys', src, tonumber(args[1]))
 end)
 
-Kora.commands.add('addkeys', 'Adds keys to a vehicle for someone.', {
-    { name = 'id', help = 'Player ID' },
-    { name = 'plate', help = 'Plate' },
+Kora.commands.add('addkeys', Kora.lang('cmd_addkeys_help'), {
+    { name = 'id', help = Kora.lang('cmd_player_id') },
+    { name = 'plate', help = Kora.lang('cmd_plate') },
 }, true, function(src, args)
     local target, plate = adminTarget(src, args)
     if not target then return end
     if not giveKeys(target, plate) then
-        return Kora.notify.send(src, { title = Config.Text.titleKeys, message = 'Temporary keys are disabled.', type = 'error' })
+        return Kora.notify.send(src, {
+            title = Config.Text.titleKeys,
+            message = Kora.lang('temporary_keys_disabled'),
+            type = 'error',
+        })
     end
     auditAdmin(src, 'addkeys', target, plate)
 end, { permission = 'admin', checkPermission = checkPermission })
 
-Kora.commands.add('removekeys', 'Remove keys to a vehicle for someone.', {
-    { name = 'id', help = 'Player ID' },
-    { name = 'plate', help = 'Plate' },
+Kora.commands.add('removekeys', Kora.lang('cmd_removekeys_help'), {
+    { name = 'id', help = Kora.lang('cmd_player_id') },
+    { name = 'plate', help = Kora.lang('cmd_plate') },
 }, true, function(src, args)
     local target, plate = adminTarget(src, args)
     if not target then return end
