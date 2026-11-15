@@ -73,13 +73,13 @@ local function requestHotwireSession(callbackName, networkId)
             hotwireBlockedUntil = GetGameTimer() + retryMs
         end
         if Config.Hotwire.debug == true then
-            print(('[kora_vehiclekeys] %s: no response from the server (%s)'):format(
-                callbackName, tostring(authorization)))
+            Kora.logging.debug('keys.no_server_response', 'No response from the server', {
+                callback = callbackName, error = tostring(authorization) })
         end
         return nil
     end
     if not authorization and not err and Config.Hotwire.debug == true then
-        print(('[kora_vehiclekeys] %s: server returned no authorization and no reason'):format(callbackName))
+        Kora.logging.debug('keys.no_authorization_reason', 'Server returned no authorization and no reason', { callback = callbackName })
     end
     return authorization, err
 end
@@ -139,7 +139,7 @@ local function startBikeGuard()
         while true do
             local ok, err = pcall(BikeGuard.check)
             if not ok then
-                print(('[kora_vehiclekeys] BikeGuard.check errored: %s'):format(tostring(err)))
+                Kora.logging.error('bikeguard.check_failed', 'BikeGuard.check errored', { error = tostring(err) })
             end
             local trying = GetVehiclePedIsTryingToEnter(PlayerPedId())
             if not cachedEntering and (not trying or trying == 0) then
