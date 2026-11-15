@@ -473,7 +473,7 @@ legacyEvent('qb-vehiclekeys:server:AcquireVehicleKeys', function(src, target)
     local basis = trustedBasis(src, vehicle, plate)
     if not basis or not grantAllowed(src) then return end
     if giveKeys(src, plate) and cfg.log ~= false then
-        print(('[kora_vehiclekeys] granted keys to player %d for plate %s (%s)'):format(src, plate, basis))
+        Kora.logging.info('keys.granted', 'Granted vehicle keys', { playerId = src, plate = plate, basis = basis })
     end
 end, 300)
 
@@ -558,7 +558,7 @@ Kora.callback.register('qb-vehiclekeys:server:checkPlayerOwned', function(src, p
 end, { rateLimit = Config.RateLimits.access })
 
 local function auditAdmin(src, action, target, plate)
-    print(('[kora_vehiclekeys] %s by %s: player %s plate %s'):format(action, tostring(src), tostring(target), plate))
+    Kora.logging.info('keys.admin_action', 'Vehicle keys admin action', { action = action, adminId = src, targetId = target, plate = plate })
     Kora.logging.event('vehiclekeys:' .. action, src, { target = target, plate = plate })
 end
 
