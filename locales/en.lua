@@ -22,7 +22,7 @@ return {
     temporary_keys_disabled = 'Temporary keys are disabled.',
     cmd_givekeys_help = 'Hand over the keys to someone. If no ID, gives to closest person or everyone in the vehicle.',
     cmd_addkeys_help = 'Adds keys to a vehicle for someone.',
-    cmd_removekeys_help = 'Remove keys to a vehicle for someone.',
+    cmd_removekeys_help = 'Remove keys to a vehicle from someone.',
     cmd_player_id = 'Player ID',
     cmd_plate = 'Plate',
     locked = 'Locked',
