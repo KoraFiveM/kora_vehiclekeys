@@ -1,5 +1,6 @@
 fx_version 'cerulean'
 game 'gta5'
+dependency 'kora_lib'
 provide 'qb-vehiclekeys'
 lua54 'yes'
 
@@ -27,3 +28,5 @@ files {
 
 -- kora_qa: Gherkin test scenarios (converted legacy tests), see [kora]/kora_qa/README.md
 qa_feature 'tests/*.feature'
+
+server_script 'kora_versioncheck.lua'

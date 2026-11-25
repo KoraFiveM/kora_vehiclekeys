@@ -9,6 +9,7 @@
       "client/stock.lua"
     ],
     "server": [
+      "kora_versioncheck.lua",
       "server/main.lua"
     ],
     "shared": [
