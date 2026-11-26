@@ -53,15 +53,15 @@ local function showStatus(locked)
     textUiToken = textUiToken + 1
     local token = textUiToken
     if textUiHandle then
-        Kora.textui.hide(textUiHandle)
+        Kora.bridge.hideText(textUiHandle)
     end
-    textUiHandle = Kora.textui.show(Kora.lang(locked and 'locked' or 'unlocked'), {
+    textUiHandle = Kora.bridge.drawText(Kora.lang(locked and 'locked' or 'unlocked'), {
         position = 'bottom-center',
         icon = locked and 'Lock' or 'LockOpen',
     })
     SetTimeout(1500, function()
         if token == textUiToken and textUiHandle then
-            Kora.textui.hide(textUiHandle)
+            Kora.bridge.hideText(textUiHandle)
             textUiHandle = nil
         end
     end)
