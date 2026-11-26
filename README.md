@@ -16,7 +16,7 @@ Server-authoritative vehicle locks, ignition checks, physical vehicle keys, and 
 Start `kora_vehiclekeys` after `kora_core` and `kora_inventory`. The included server configuration does this already. In normal mode, the resource keeps granted keys only for a player's current session:
 
 ```lua
-exports.kora_vehiclekeys:giveKeys(source, plate)
+Kora.bridge.giveKeys(source, plate)
 exports.kora_vehiclekeys:removeKeys(source, plate)
 local hasKeys = exports.kora_vehiclekeys:hasKeys(source, plate)
 ```
@@ -77,7 +77,7 @@ Legacy `qb-vehiclekeys:HasKeys(source, plate)` on the server reads the existing 
 
 Keys are session-only here. Stock persists them in player metadata (`Config.PersistentKeys`, default true), so that part is not at parity; use physical key items for keys that must survive a restart.
 
-Not mapped: server-to-client `TriggerClientEvent('qb-vehiclekeys:client:AddKeys', ...)` from other server scripts cannot grant keys (the server cannot intercept it); use `exports['qb-vehiclekeys']:GiveKeys(src, plate)` or `exports.kora_vehiclekeys:giveKeys`. Stock events are throttled to one call per 500 ms per player.
+Not mapped: server-to-client `TriggerClientEvent('qb-vehiclekeys:client:AddKeys', ...)` from other server scripts cannot grant keys (the server cannot intercept it); use `exports['qb-vehiclekeys']:GiveKeys(src, plate)` or `Kora.bridge.giveKeys`. Stock events are throttled to one call per 500 ms per player.
 
 ### Lockpick items
 

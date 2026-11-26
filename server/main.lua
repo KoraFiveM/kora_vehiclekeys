@@ -139,7 +139,7 @@ local function maybeBreakLockpick(src, session, successful)
     local chance = tonumber(successful and chances.success or chances.failure) or 0
     if chance <= 0 or math.random(100) > chance then return end
     exports.kora_core:removeItem(src, session.item or Config.Lockpick.item, 1, session.slot, 'vehicle-lockpick-broke')
-    Kora.notify.send(src, {
+    Kora.bridge.sendNotify(src, {
         title = Config.Text.titleHotwireFailed,
         message = Kora.lang('lockpick_broke'),
         type = 'error',
@@ -283,13 +283,13 @@ Kora.events.register('kora_vehiclekeys:server:hotwireFinished', function(src, au
     maybeBreakLockpick(src, session, successful)
     if not successful then
         if not session.requireDriver and Config.Lockpick.lockpickFailureText == true then
-            return Kora.notify.send(src, {
+            return Kora.bridge.sendNotify(src, {
                 title = Config.Text.titleLockpickFailed,
                 message = Config.Text.lockpickFailed,
                 type = 'error',
             })
         end
-        return Kora.notify.send(src, {
+        return Kora.bridge.sendNotify(src, {
             title = Config.Text.titleHotwireFailed,
             message = Kora.lang('ignition_resisted'),
             type = 'error',
@@ -300,7 +300,7 @@ Kora.events.register('kora_vehiclekeys:server:hotwireFinished', function(src, au
         giveKeys(src, session.plate, true)
     end
     setLocked(vehicle, session.networkId, false)
-    Kora.notify.send(src, {
+    Kora.bridge.sendNotify(src, {
         title = Config.Text.titleHotwire,
         message = Kora.lang(session.requireDriver and 'vehicle_hotwired' or 'door_lockpicked'),
         type = 'success',
@@ -500,7 +500,7 @@ legacyEvent('qb-vehiclekeys:server:GiveVehicleKeys', function(src, receiver, pla
             and giveKeys(target, plate) then
             seen[target] = true
             given = true
-            Kora.notify.send(target, {
+            Kora.bridge.sendNotify(target, {
                 title = Config.Text.titleKeys,
                 message = Kora.lang('keys_received'),
                 type = 'success',
@@ -508,7 +508,7 @@ legacyEvent('qb-vehiclekeys:server:GiveVehicleKeys', function(src, receiver, pla
         end
     end
     if given then
-        Kora.notify.send(src, {
+        Kora.bridge.sendNotify(src, {
             title = Config.Text.titleKeys,
             message = Kora.lang('keys_handed_over'),
             type = 'success',
@@ -565,7 +565,7 @@ end
 local function adminTarget(src, args)
     local target, plate = tonumber(args[1]), normalisePlate(args[2])
     if not isOnline(target) or not plate then
-        Kora.notify.send(src, {
+        Kora.bridge.sendNotify(src, {
             title = Config.Text.titleKeys,
             message = Kora.lang('player_plate_required'),
             type = 'error',
@@ -593,7 +593,7 @@ Kora.commands.add('addkeys', Kora.lang('cmd_addkeys_help'), {
     local target, plate = adminTarget(src, args)
     if not target then return end
     if not giveKeys(target, plate) then
-        return Kora.notify.send(src, {
+        return Kora.bridge.sendNotify(src, {
             title = Config.Text.titleKeys,
             message = Kora.lang('temporary_keys_disabled'),
             type = 'error',
