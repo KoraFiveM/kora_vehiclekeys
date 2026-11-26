@@ -14,7 +14,7 @@ Use `giveKeys` after your script has handed a vehicle to a player (garage, deale
 
 ```lua title="server.lua"
 -- server script of a garage / rental / job resource, after the vehicle exists
-local ok = exports.kora_vehiclekeys:giveKeys(src, GetVehicleNumberPlateText(vehicle))
+local ok = Kora.bridge.giveKeys(src, GetVehicleNumberPlateText(vehicle))
 if not ok then
     print('could not give keys (invalid plate or Config.AllowTemporaryKeys = false)')
 end
@@ -77,7 +77,7 @@ Config.PhysicalKey = {
 
 ## Where the other Kora resources use it
 
-- `kora_dealership` calls `exports.kora_vehiclekeys:giveKeys(target, plate)` after a purchase.
+- `kora_dealership` calls `Kora.bridge.giveKeys(target, plate)` after a purchase.
 - `kora_core` (qb-vehicles compatibility) calls `giveKeys(src, plate)` for vehicles spawned through its server callbacks when `grantKeys` is on and this resource is started.
 - `kora_truckerjob` calls `exports[Config.KeysResource or 'kora_vehiclekeys']:giveKeys(source, plate, true)`, using the optional third argument.
 - `kora_inventory` reads the `kora_vehiclekeys:locked` state bag to refuse trunk access to a locked vehicle (a setting in its own config).

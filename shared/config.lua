@@ -19,7 +19,7 @@ Config.AccessCacheMs = 1500
 Config.allowPickupLockedBikes = false
 
 -- Virtual keys are held only for the current server session. Garages,
--- dealerships, and job resources can grant them with exports.kora_vehiclekeys:giveKeys.
+-- dealerships, and job resources can grant them with Kora.bridge.giveKeys.
 Config.AllowTemporaryKeys = true
 
 -- Stock qb-vehiclekeys let a client ask for keys to a plate it names. That is
@@ -27,7 +27,7 @@ Config.AllowTemporaryKeys = true
 -- and the client AddKeys / SetOwner events that forward to it) are ignored.
 -- Set true to honour them ONLY for the vehicle the player is currently driving
 -- with a matching plate (note: this lets a driver skip hotwiring). Server
--- scripts should use exports.kora_vehiclekeys:giveKeys instead.
+-- scripts should use Kora.bridge.giveKeys instead.
 Config.LegacyClientGrants = false
 
 -- Safe handling of stock `vehiclekeys:client:SetOwner` / AddKeys /

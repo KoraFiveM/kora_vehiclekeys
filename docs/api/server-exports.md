@@ -33,7 +33,7 @@ Session keys are stored in a local table `temporaryKeys[src][plate]`. A value of
 
 Server exports are trusted-caller APIs: they do not receive a player claim, they take the source from your script. Never forward a client's value as `src` or `plate` without your own checks.
 
-### `exports.kora_vehiclekeys:giveKeys(src, plate, allowWhenDisabled?) -> boolean`
+### `Kora.bridge.giveKeys(src, plate, allowWhenDisabled?) -> boolean`
 
 Gives a player a session key for a plate. Registered with `exports('giveKeys', giveKeys)` in `server/main.lua`. The key lives in server memory until the player drops, the plate is removed with `removeKeys`, or the resource restarts. The client is told with the push `kora_vehiclekeys:client:keysChanged` so its access cache is cleared.
 
@@ -57,12 +57,12 @@ Gives a player a session key for a plate. Registered with `exports('giveKeys', g
 local vehicle = CreateVehicle(joaat('panto'), coords.x, coords.y, coords.z, heading, true, true)
 local plate = GetVehicleNumberPlateText(vehicle)
 
-if not exports.kora_vehiclekeys:giveKeys(src, plate) then
+if not Kora.bridge.giveKeys(src, plate) then
     print(('rental: keys for %s were not granted'):format(plate))
 end
 
 -- item-only server: force a session key anyway
-exports.kora_vehiclekeys:giveKeys(src, plate, true)
+Kora.bridge.giveKeys(src, plate, true)
 ```
 
 **Representative console output**
@@ -238,7 +238,7 @@ Summary of the own-name exports (the full signatures above are authoritative):
 
 | Export | Returns | Description |
 | --- | --- | --- |
-| `exports.kora_vehiclekeys:giveKeys(source, plate)` | boolean | Grants a session key and tells the client. Returns `false` for an invalid plate or when `Config.AllowTemporaryKeys` is `false` (unless the third argument is passed). |
+| `Kora.bridge.giveKeys(source, plate)` | boolean | Grants a session key and tells the client. Returns `false` for an invalid plate or when `Config.AllowTemporaryKeys` is `false` (unless the third argument is passed). |
 | `exports.kora_vehiclekeys:removeKeys(source, plate)` | boolean | Removes the player's session key. |
 | `exports.kora_vehiclekeys:hasKeys(source, plate)` | boolean | `true` for a session key, hotwire key or matching physical key. Job access is not included. |
 

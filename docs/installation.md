@@ -71,7 +71,7 @@ What each resource is used for in the code (derived from `fxmanifest.lua` and th
 2. Ensure it after `kora_lib` and `kora_core`.
 3. Review [Configuration](./api/configuration.md). For item-based keys, set `Config.PhysicalKey.enabled = true` and register the key item (default name `vehiclekey`) in your item registry.
 4. Register the lockpick items `lockpick` and `advancedlockpick` in your item registry (or whatever you put in `Config.Lockpick.items`).
-5. From your garage, dealership, rental or job resource call `exports.kora_vehiclekeys:giveKeys(source, plate)` when a vehicle is handed to a player. See [Server exports](./api/server-exports.md).
+5. From your garage, dealership, rental or job resource call `Kora.bridge.giveKeys(source, plate)` when a vehicle is handed to a player. See [Server exports](./api/server-exports.md).
 
 The manifest declares `provide 'qb-vehiclekeys'`, so do not run the stock `qb-vehiclekeys` alongside it.
 

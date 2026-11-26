@@ -1,7 +1,7 @@
 local accessCache, busyHotwiring = {}, false
 
 local function notify(message, notificationType, title)
-    Kora.notify.send({ title = title or Config.Text.titleKeys, message = message, type = notificationType or 'info' })
+    Kora.bridge.sendNotify({ title = title or Config.Text.titleKeys, message = message, type = notificationType or 'info' })
 end
 
 local function currentOrClosestVehicle(distance)
